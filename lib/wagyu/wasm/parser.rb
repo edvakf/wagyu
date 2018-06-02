@@ -3,7 +3,6 @@ require "wagyu/wasm/module"
 module Wagyu::Wasm
   class Parser
     WASM_MAGIC = "\0asm"
-    WASM_VERSIONS = {"\x01\0\0\0" => 1}.freeze
 
     class ParseError < StandardError; end
 
@@ -28,6 +27,10 @@ module Wagyu::Wasm
 
     def read_bytes(n)
       @io.read(n)
+    end
+
+    def read_uint32
+      read_bytes(4).unpack('V')[0]
     end
 
     # https://en.wikipedia.org/wiki/LEB128#Decode_unsigned_integer
@@ -55,9 +58,7 @@ module Wagyu::Wasm
     end
 
     def read_version
-      version = read_bytes(4)
-      raise ParseError, 'unknown version' unless WASM_VERSIONS.include?(version)
-      WASM_VERSIONS[version]
+      read_uint32
     end
 
     def read_section(mod)
