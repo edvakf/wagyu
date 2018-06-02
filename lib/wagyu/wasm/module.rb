@@ -14,6 +14,7 @@ module Wagyu::Wasm
 
   Module = Struct.new(
     :version,
+    # some sections are optional and can be nil
     :type_section,
     :import_section,
     :function_section,
