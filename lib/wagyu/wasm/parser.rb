@@ -25,8 +25,13 @@ module Wagyu::Wasm
 
     private
 
+    # common building blocks
     def read_bytes(n)
       @io.read(n)
+    end
+
+    def read_uint8
+      read_bytes(1).ord
     end
 
     def read_uint32
@@ -48,10 +53,32 @@ module Wagyu::Wasm
 
     # varuint7 (second highest bit is the sign bit)
     def read_value_type
-      b = @io.read(1).ord
-      (b & 0b0011_1111) * ((b & 0b0100_0000) == 0 ? 1 : -1)
+      case read_uint8
+      when 0x7f then :i32
+      when 0x7e then :i64
+      when 0x7d then :f32
+      when 0x7c then :f64
+      when 0x70 then :anyfunc
+      when 0x60 then :func
+      when 0x40 then :block_type
+      else
+        raise ParseError, 'unknown value type'
+      end
+      #(b & 0b0011_1111) * ((b & 0b0100_0000) == 0 ? 1 : -1)
     end
 
+    def read_external_kind
+      case read_uint8
+      when 0 then :function
+      when 1 then :table
+      when 2 then :memory
+      when 3 then :global
+      else
+        raise ParseError, 'unknown kind'
+      end
+    end
+
+    # Module
     def read_magic
       magic = read_bytes(4)
       raise ParseError, 'magic does not match' unless WASM_MAGIC == magic
@@ -78,8 +105,8 @@ module Wagyu::Wasm
         #mod.memory_section = read_memory_section
       #when GlobalID
         #mod.global_section = read_global_section
-      #when ExportID
-        #mod.export_section = read_export_section
+      when ExportID
+        mod.export_section = read_export_section
       #when StartID
         #mod.start_section = read_start_section
       #when ElementID
@@ -123,6 +150,23 @@ module Wagyu::Wasm
         read_varuint
       end
       FunctionSection.new(types)
+    end
+
+    # ExportSection
+    def read_export_section
+      exports = Array.new(read_varuint) do
+        read_export
+      end
+      ExportSection.new(exports)
+    end
+
+    def read_export
+      field_len = read_varuint
+      field_str = read_bytes(field_len)
+
+      kind = read_external_kind
+      index = read_varuint
+      ExportEntry.new(field_str, kind, index)
     end
 
     # CodeSection

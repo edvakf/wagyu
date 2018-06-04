@@ -46,4 +46,6 @@ module Wagyu::Wasm
 
   FunctionBody = Struct.new(:locals, :code)
   LocalEntry = Struct.new(:count, :type)
+
+  ExportEntry = Struct.new(:field, :kind, :index)
 end
