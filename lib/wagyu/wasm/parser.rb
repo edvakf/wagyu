@@ -1,7 +1,9 @@
-require "wagyu/wasm/module"
+require "wagyu/wasm/internal"
 
 module Wagyu::Wasm
   class Parser
+    include Internal
+
     WASM_MAGIC = "\0asm"
 
     class ParseError < StandardError; end
@@ -10,17 +12,17 @@ module Wagyu::Wasm
       @io = io
     end
 
-    def parse()
+    def parse
       read_magic
       version = read_version
 
-      mod = Module.new(version)
+      rep = Representation.new(version)
       loop do
         break if @io.eof?
-        read_section(mod)
+        read_section(rep)
       end
 
-      mod
+      rep
     end
 
     private
@@ -151,35 +153,35 @@ module Wagyu::Wasm
       read_uint32
     end
 
-    def read_section(mod)
+    def read_section(rep)
       id = read_varuint # varuint32
       payload_len = read_varuint # varuint32 (there isn't quite a use case for this in ruby)
 
       case id
       when TypeID
-        mod.type_section = read_type_section
+        rep.type_section = read_type_section
       #when ImportID
-        #mod.import_section = read_type_section
+        #rep.import_section = read_type_section
       when FunctionID
-        mod.function_section = read_function_section
+        rep.function_section = read_function_section
       #when TableID
-        #mod.table_section = read_table_section
+        #rep.table_section = read_table_section
       #when MemoryID
-        #mod.memory_section = read_memory_section
+        #rep.memory_section = read_memory_section
       #when GlobalID
-        #mod.global_section = read_global_section
+        #rep.global_section = read_global_section
       when ExportID
-        mod.export_section = read_export_section
+        rep.export_section = read_export_section
       #when StartID
-        #mod.start_section = read_start_section
+        #rep.start_section = read_start_section
       #when ElementID
-        #mod.element_section = read_element_section
+        #rep.element_section = read_element_section
       when CodeID
-        mod.code_section = read_code_section
+        rep.code_section = read_code_section
       #when DataID
-        #mod.data_section = read_data_section
+        #rep.data_section = read_data_section
       #when UnknownID
-        #mod.name_section = read_name_section
+        #rep.name_section = read_name_section
       else
         raise ParseError, 'undefined section found'
       end

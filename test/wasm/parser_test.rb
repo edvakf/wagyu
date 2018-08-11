@@ -1,6 +1,6 @@
 require "test_helper"
 
-class WagyuTest < Minitest::Test
+class ParserTest < Minitest::Test
   def test_parse_simplest_function
     a = [
       0x00, 0x61, 0x73, 0x6d, # magic
