@@ -14,18 +14,50 @@ module Wagyu::Wasm
       pp rep
 
       mod = Class.new do |c|
-        define_method(:add) {|a, b| a+b }
+        # define_method(:add) {|a, b| a+b }
 
-        # if rep.export_section
-        #   rep.export_section.exports.each_with_index do |export_entry, i|
-        #     if export_entry.kind == :function
-        #       c.define_method(export_entry.field) do |*args|
-        #         stack = []
-        #         args[0] + args[1]
-        #       end
-        #     end
-        #   end
-        # end
+        if rep.function_section
+          rep.function_section.types.each_with_index do |type_idx, func_idx|
+            function_body = rep.code_section.bodies[func_idx]
+            params = rep.type_section.types[type_idx].params.map.with_index{|type, i| "_local_#{i}_#{type}"}
+
+            locals = params # TODO: add function_body.locals
+            var_num = 0 # number of temporary variables
+
+            stack = []
+            code = ""
+
+            function_body.code.each do |op|
+              case op[:op]
+              when :get_local
+                stack << locals[op[:local_index]]
+              when :add
+                var = "_var_#{var_num}_#{op[:type]}"
+                code += "#{var} = #{stack.pop} + #{stack.pop}\n" # TODO: push the result onto stacksw
+                stack << var
+                var_num += 1
+              when :end
+                code += stack.pop
+              end
+            end
+
+            p stack # should assert stack is empty??
+
+            eval(<<~EVAL, binding)
+              def __#{func_idx}(#{params.join(", ")})
+                #{code}
+              end
+            EVAL
+          end
+        end
+
+        if rep.export_section
+          rep.export_section.exports.each_with_index do |export_entry, i|
+            if export_entry.kind == :function
+              alias_method export_entry.field.to_sym, "__#{export_entry.index}".to_sym
+            end
+          end
+        end
       end
 
       mod
