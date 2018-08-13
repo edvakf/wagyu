@@ -17,7 +17,7 @@ module Wagyu::Wasm
         if rep.function_section
           rep.function_section.types.each_with_index do |type_idx, func_idx|
             function_body = rep.code_section.bodies[func_idx]
-            params = rep.type_section.types[type_idx].params.map.with_index{|type, i| "_local_#{i}_#{type}"}
+            params = rep.type_section.types[type_idx].params.map.with_index{|type, i| "local_#{i}"}
 
             locals = params # TODO: add function_body.locals
             var_num = 0 # number of temporary variables
@@ -30,12 +30,12 @@ module Wagyu::Wasm
               when :get_local
                 stack << locals[op[:local_index]]
               when :add
-                var = "_var_#{var_num}_#{op[:type]}"
+                var = "var_#{var_num}"
                 code += "#{var} = #{stack.pop} + #{stack.pop}\n"
                 stack << var
                 var_num += 1
               when :mul
-                var = "_var_#{var_num}_#{op[:type]}"
+                var = "var_#{var_num}"
                 code += "#{var} = #{stack.pop} * #{stack.pop}\n"
                 stack << var
                 var_num += 1
