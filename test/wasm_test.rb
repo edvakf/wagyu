@@ -41,4 +41,14 @@ class WasmTest < Minitest::Test
       assert_equal(9, result)
     end
   end
+
+  def test_rms
+    open("#{__dir__}/data/rms.wasm") do |f|
+      klass = Wagyu::Wasm.compile_streaming(f)
+      instance = Struct.new(:exports).new(klass.new)
+
+      result = instance.exports.rms(3.0, 4.0)
+      assert_equal(5.0, result)
+    end
+  end
 end

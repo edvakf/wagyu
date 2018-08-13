@@ -23,7 +23,7 @@ module Wagyu::Wasm
             var_num = 0 # number of temporary variables
 
             stack = []
-            code = ""
+            code = []
 
             function_body.code.each do |op|
               case op[:op]
@@ -31,26 +31,41 @@ module Wagyu::Wasm
                 stack << locals[op[:local_index]]
               when :add
                 var = "var_#{var_num}"
-                code += "#{var} = #{stack.pop} + #{stack.pop}\n"
+                code << "#{var} = #{stack.pop} + #{stack.pop}"
                 stack << var
                 var_num += 1
               when :mul
                 var = "var_#{var_num}"
-                code += "#{var} = #{stack.pop} * #{stack.pop}\n"
+                code << "#{var} = #{stack.pop} * #{stack.pop}"
+                stack << var
+                var_num += 1
+              when :call
+                var = "var_#{var_num}"
+                code << "#{var} = __#{op[:function_index]}(#{stack.pop})"
+                stack << var
+                var_num += 1
+              when :sqrt
+                var = "var_#{var_num}"
+                code << "#{var} = Math.sqrt(#{stack.pop})"
                 stack << var
                 var_num += 1
               when :end
-                code += stack.pop
+                code << stack.pop
+              else
+                raise StandardError('Unknown instruction')
               end
             end
 
             # p stack # should assert stack is empty??
 
-            eval(<<~EVAL, binding)
+            method = <<~METHOD
               def __#{func_idx}(#{params.join(", ")})
-                #{code}
+              #{code.map{|line| "  " + line}.join("\n")}
               end
-            EVAL
+            METHOD
+
+            # puts method
+            eval(method, binding)
           end
         end
 

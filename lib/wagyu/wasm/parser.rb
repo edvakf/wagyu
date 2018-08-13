@@ -261,13 +261,15 @@ module Wagyu::Wasm
       LocalEntry.new(count, type)
     end
 
+    # body_size is not needed for decoding
+    # https://www.w3.org/TR/wasm-core-1/#code-section%E2%91%A0
+    # "the code size is not needed for decoding, but can be used to skip functions when navigating through a binary"
     def read_code(body_size)
-      start = @io.pos
       code = []
       loop do
         op = read_op
         code << op
-        break if op[:op] == :end && @io.pos = start + body_size
+        break if op[:op] == :end
       end
       code
     end
