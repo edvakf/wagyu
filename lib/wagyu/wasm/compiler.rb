@@ -3,6 +3,63 @@ require "wagyu/wasm/parser"
 require "pp"
 
 module Wagyu::Wasm
+  class MethodCompiler
+    def initialize
+      @var_num = 0
+    end
+
+    def compile(function_index, function_body, types)
+      params = types.params.map.with_index{|type, i| "local_#{i}"}
+
+      locals = params # TODO: add function_body.locals
+
+      stack = []
+      code = []
+
+      function_body.code.each do |op|
+        case op[:op]
+        when :get_local
+          stack << locals[op[:local_index]]
+        when :add
+          var = "var_#{@var_num}"
+          code << "#{var} = #{stack.pop} + #{stack.pop}"
+          stack << var
+          @var_num += 1
+        when :mul
+          var = "var_#{@var_num}"
+          code << "#{var} = #{stack.pop} * #{stack.pop}"
+          stack << var
+          @var_num += 1
+        when :call
+          var = "var_#{@var_num}"
+          code << "#{var} = __#{op[:function_index]}(#{stack.pop})"
+          stack << var
+          @var_num += 1
+        when :sqrt
+          var = "var_#{@var_num}"
+          code << "#{var} = Math.sqrt(#{stack.pop})"
+          stack << var
+          @var_num += 1
+        when :end
+          code << stack.pop
+        else
+          raise StandardError('Unknown instruction')
+        end
+      end
+
+      # p stack # should assert stack is empty??
+
+      method = <<~METHOD
+        def __#{function_index}(#{params.join(", ")})
+        #{code.map{|line| "  " + line}.join("\n")}
+        end
+      METHOD
+
+      return method
+    end
+  end
+
+
   class Compiler
     def initialize
     end
@@ -16,53 +73,12 @@ module Wagyu::Wasm
       mod = Class.new do |c|
         if rep.function_section
           rep.function_section.types.each_with_index do |type_idx, func_idx|
-            function_body = rep.code_section.bodies[func_idx]
-            params = rep.type_section.types[type_idx].params.map.with_index{|type, i| "local_#{i}"}
 
-            locals = params # TODO: add function_body.locals
-            var_num = 0 # number of temporary variables
-
-            stack = []
-            code = []
-
-            function_body.code.each do |op|
-              case op[:op]
-              when :get_local
-                stack << locals[op[:local_index]]
-              when :add
-                var = "var_#{var_num}"
-                code << "#{var} = #{stack.pop} + #{stack.pop}"
-                stack << var
-                var_num += 1
-              when :mul
-                var = "var_#{var_num}"
-                code << "#{var} = #{stack.pop} * #{stack.pop}"
-                stack << var
-                var_num += 1
-              when :call
-                var = "var_#{var_num}"
-                code << "#{var} = __#{op[:function_index]}(#{stack.pop})"
-                stack << var
-                var_num += 1
-              when :sqrt
-                var = "var_#{var_num}"
-                code << "#{var} = Math.sqrt(#{stack.pop})"
-                stack << var
-                var_num += 1
-              when :end
-                code << stack.pop
-              else
-                raise StandardError('Unknown instruction')
-              end
-            end
-
-            # p stack # should assert stack is empty??
-
-            method = <<~METHOD
-              def __#{func_idx}(#{params.join(", ")})
-              #{code.map{|line| "  " + line}.join("\n")}
-              end
-            METHOD
+            method = MethodCompiler.new.compile(
+              func_idx,
+              rep.code_section.bodies[func_idx],
+              rep.type_section.types[type_idx]
+            )
 
             # puts method
             eval(method)
