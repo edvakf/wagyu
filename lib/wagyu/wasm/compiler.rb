@@ -11,11 +11,9 @@ module Wagyu::Wasm
     def compile(io)
       rep = Parser.new(io).parse
 
-      pp rep
+      # pp rep
 
       mod = Class.new do |c|
-        # define_method(:add) {|a, b| a+b }
-
         if rep.function_section
           rep.function_section.types.each_with_index do |type_idx, func_idx|
             function_body = rep.code_section.bodies[func_idx]
@@ -33,7 +31,12 @@ module Wagyu::Wasm
                 stack << locals[op[:local_index]]
               when :add
                 var = "_var_#{var_num}_#{op[:type]}"
-                code += "#{var} = #{stack.pop} + #{stack.pop}\n" # TODO: push the result onto stacksw
+                code += "#{var} = #{stack.pop} + #{stack.pop}\n"
+                stack << var
+                var_num += 1
+              when :mul
+                var = "_var_#{var_num}_#{op[:type]}"
+                code += "#{var} = #{stack.pop} * #{stack.pop}\n"
                 stack << var
                 var_num += 1
               when :end
@@ -41,7 +44,7 @@ module Wagyu::Wasm
               end
             end
 
-            p stack # should assert stack is empty??
+            # p stack # should assert stack is empty??
 
             eval(<<~EVAL, binding)
               def __#{func_idx}(#{params.join(", ")})

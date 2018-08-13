@@ -31,4 +31,14 @@ class WasmTest < Minitest::Test
     klass = Wagyu::Wasm.compile(binary)
     Struct.new(:exports).new(klass.new)
   end
+
+  def test_square
+    open("#{__dir__}/data/square.wasm") do |f|
+      klass = Wagyu::Wasm.compile_streaming(f)
+      instance = Struct.new(:exports).new(klass.new)
+
+      result = instance.exports.square(3)
+      assert_equal(9, result)
+    end
+  end
 end
