@@ -6,6 +6,8 @@ module Wagyu::Wasm
   class MethodCompiler
     def initialize
       @var_num = 0
+      @stack = []
+      @code = []
     end
 
     def compile(function_index, function_body, types)
@@ -13,49 +15,41 @@ module Wagyu::Wasm
 
       locals = params # TODO: add function_body.locals
 
-      stack = []
-      code = []
-
       function_body.code.each do |op|
         case op[:op]
         when :get_local
-          stack << locals[op[:local_index]]
+          @stack << locals[op[:local_index]]
         when :add
-          var = "var_#{@var_num}"
-          code << "#{var} = #{stack.pop} + #{stack.pop}"
-          stack << var
-          @var_num += 1
+          add_instruction { "#{@stack.pop} + #{@stack.pop}" }
         when :mul
-          var = "var_#{@var_num}"
-          code << "#{var} = #{stack.pop} * #{stack.pop}"
-          stack << var
-          @var_num += 1
+          add_instruction { "#{@stack.pop} * #{@stack.pop}" }
         when :call
-          var = "var_#{@var_num}"
-          code << "#{var} = __#{op[:function_index]}(#{stack.pop})"
-          stack << var
-          @var_num += 1
+          add_instruction { "__#{op[:function_index]}(#{@stack.pop})" }
         when :sqrt
-          var = "var_#{@var_num}"
-          code << "#{var} = Math.sqrt(#{stack.pop})"
-          stack << var
-          @var_num += 1
+          add_instruction { "Math.sqrt(#{@stack.pop})" }
         when :end
-          code << stack.pop
+          @code << @stack.pop
         else
           raise StandardError('Unknown instruction')
         end
       end
 
-      # p stack # should assert stack is empty??
+      # p @stack # should assert stack is empty??
 
       method = <<~METHOD
         def __#{function_index}(#{params.join(", ")})
-        #{code.map{|line| "  " + line}.join("\n")}
+        #{@code.map{|line| "  " + line}.join("\n")}
         end
       METHOD
 
       return method
+    end
+
+    def add_instruction
+      var = "var_#{@var_num}"
+      @code << "#{var} = #{yield}"
+      @stack << var
+      @var_num += 1
     end
   end
 
