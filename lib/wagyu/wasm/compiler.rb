@@ -65,7 +65,7 @@ module Wagyu::Wasm
             METHOD
 
             # puts method
-            eval(method, binding)
+            eval(method)
           end
         end
 
