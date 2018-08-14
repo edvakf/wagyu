@@ -14,6 +14,8 @@ module Wagyu::Wasm
 
       locals = params # TODO: add function_body.locals
 
+      @code << "def __#{function_index}(#{params.join(", ")})"
+
       function_body.code.each do |instr|
         case instr[:name]
         when :if
@@ -48,13 +50,7 @@ module Wagyu::Wasm
       # p @stack # should assert stack is empty??
       # pp @code
 
-      method = <<~METHOD
-        def __#{function_index}(#{params.join(", ")})
-        #{@code.map{|line| line.prepend("  ")}.join("\n")}
-
-      METHOD
-
-      return method
+      return @code.join("\n")
     end
 
     def add_instruction
