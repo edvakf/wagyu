@@ -38,7 +38,7 @@ module Wagyu::Wasm
 
       method = <<~METHOD
         def __#{function_index}(#{params.join(", ")})
-        #{@code.map{|line| "  " + line}.join("\n")}
+        #{@code.map{|line| line.prepend("  ")}.join("\n")}
         end
       METHOD
 
