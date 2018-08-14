@@ -16,10 +16,21 @@ module Wagyu::Wasm
 
       function_body.code.each do |instr|
         case instr[:name]
+        when :if
+          add_instruction { "if #{@stack.pop}" }
+        when :else
+          @code << @stack.pop
+          @code << "else"
+        when :const
+          add_instruction { instr[:value].to_s }
+        when :eq
+          add_instruction { "#{@stack.pop} == #{@stack.pop}" }
         when :get_local
           @stack << locals[instr[:local_index]]
         when :add
           add_instruction { "#{@stack.pop} + #{@stack.pop}" }
+        when :sub
+          add_instruction { a,b = @stack.pop(2); "#{a} - #{b}" }
         when :mul
           add_instruction { "#{@stack.pop} * #{@stack.pop}" }
         when :call
@@ -28,17 +39,19 @@ module Wagyu::Wasm
           add_instruction { "Math.sqrt(#{@stack.pop})" }
         when :end
           @code << @stack.pop
+          @code << "end"
         else
-          raise StandardError('Unknown instruction')
+          raise StandardError.new("Unknown instruction: #{instr[:name]}")
         end
       end
 
       # p @stack # should assert stack is empty??
+      # pp @code
 
       method = <<~METHOD
         def __#{function_index}(#{params.join(", ")})
         #{@code.map{|line| line.prepend("  ")}.join("\n")}
-        end
+
       METHOD
 
       return method

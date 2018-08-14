@@ -245,12 +245,13 @@ module Wagyu::Wasm
 
     def read_function_body
       body_size = read_varuint # size of function body to follow, in bytes
+      end_pos = @io.pos + body_size
 
       locals = Array.new(read_varuint) do
         read_local_entry
       end
 
-      code = read_code(body_size)
+      code = read_code(end_pos)
 
       FunctionBody.new(locals, code)
     end
@@ -261,15 +262,12 @@ module Wagyu::Wasm
       LocalEntry.new(count, type)
     end
 
-    # body_size is not needed for decoding
-    # https://www.w3.org/TR/wasm-core-1/#code-section%E2%91%A0
-    # "the code size is not needed for decoding, but can be used to skip functions when navigating through a binary"
-    def read_code(body_size)
+    def read_code(end_pos)
       code = []
       loop do
         instr = read_instruction
         code << instr
-        break if instr[:name] == :end
+        break if @io.pos == end_pos # may assert instr[:name] == :end
       end
       code
     end

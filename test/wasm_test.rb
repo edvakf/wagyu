@@ -30,4 +30,14 @@ class WasmTest < Minitest::Test
       assert_equal(5.0, result)
     end
   end
+
+  def test_fact
+    open("#{__dir__}/data/fact.wasm") do |f|
+      klass = Wagyu::Wasm.compile_streaming(f)
+      instance = Struct.new(:exports).new(klass.new)
+
+      result = instance.exports.fact(10)
+      assert_equal(3628800, result)
+    end
+  end
 end
