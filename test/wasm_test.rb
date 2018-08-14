@@ -40,4 +40,14 @@ class WasmTest < Minitest::Test
       assert_equal(3628800, result)
     end
   end
+
+  def test_sum
+    open("#{__dir__}/data/sum.wasm") do |f|
+      klass = Wagyu::Wasm.compile_streaming(f)
+      instance = Struct.new(:exports).new(klass.new)
+
+      result = instance.exports.sum(10)
+      assert_equal(55, result)
+    end
+  end
 end
