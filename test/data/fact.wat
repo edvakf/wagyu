@@ -1,15 +1,15 @@
 (module
-  (func $fact (export "fact") (param $n i64) (result i64)
-    (if (result i64)
-      (i64.eq (get_local $n) (i64.const 0)) ;; condition
+  (func $fact (export "fact") (param $n i32) (result i32)
+    (if (result i32)
+      (i32.eq (get_local $n) (i32.const 0)) ;; condition
       (then
-        i64.const 1
+        i32.const 1
       )
       (else
-        (i64.mul
+        (i32.mul
           (get_local $n)
           (call $fact
-            (i64.sub (get_local $n) (i64.const 1))
+            (i32.sub (get_local $n) (i32.const 1))
           )
         )
       )
@@ -27,9 +27,9 @@
 ;; ; type 0
 ;; 000000b: 60                                        ; func
 ;; 000000c: 01                                        ; num params
-;; 000000d: 7e                                        ; i64
+;; 000000d: 7f                                        ; i32
 ;; 000000e: 01                                        ; num results
-;; 000000f: 7e                                        ; i64
+;; 000000f: 7f                                        ; i32
 ;; 0000009: 06                                        ; FIXUP section size
 ;; ; section "Function" (3)
 ;; 0000010: 03                                        ; section code
@@ -55,24 +55,24 @@
 ;; 0000022: 00                                        ; local decl count
 ;; 0000023: 20                                        ; get_local
 ;; 0000024: 00                                        ; local index
-;; 0000025: 42                                        ; i64.const
-;; 0000026: 00                                        ; i64 literal
-;; 0000027: 51                                        ; i64.eq
+;; 0000025: 41                                        ; i32.const
+;; 0000026: 00                                        ; i32 literal
+;; 0000027: 46                                        ; i32.eq
 ;; 0000028: 04                                        ; if
-;; 0000029: 7e                                        ; i64
-;; 000002a: 42                                        ; i64.const
-;; 000002b: 01                                        ; i64 literal
+;; 0000029: 7f                                        ; i32
+;; 000002a: 41                                        ; i32.const
+;; 000002b: 01                                        ; i32 literal
 ;; 000002c: 05                                        ; else
 ;; 000002d: 20                                        ; get_local
 ;; 000002e: 00                                        ; local index
 ;; 000002f: 20                                        ; get_local
 ;; 0000030: 00                                        ; local index
-;; 0000031: 42                                        ; i64.const
-;; 0000032: 01                                        ; i64 literal
-;; 0000033: 7d                                        ; i64.sub
+;; 0000031: 41                                        ; i32.const
+;; 0000032: 01                                        ; i32 literal
+;; 0000033: 6b                                        ; i32.sub
 ;; 0000034: 10                                        ; call
 ;; 0000035: 00                                        ; function index
-;; 0000036: 7e                                        ; i64.mul
+;; 0000036: 6c                                        ; i32.mul
 ;; 0000037: 0b                                        ; end
 ;; 0000038: 0b                                        ; end
 ;; 0000021: 17                                        ; FIXUP func body size
