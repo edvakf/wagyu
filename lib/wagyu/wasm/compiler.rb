@@ -15,16 +15,16 @@ module Wagyu::Wasm
 
       locals = params # TODO: add function_body.locals
 
-      function_body.code.each do |op|
-        case op[:op]
+      function_body.code.each do |instr|
+        case instr[:name]
         when :get_local
-          @stack << locals[op[:local_index]]
+          @stack << locals[instr[:local_index]]
         when :add
           add_instruction { "#{@stack.pop} + #{@stack.pop}" }
         when :mul
           add_instruction { "#{@stack.pop} * #{@stack.pop}" }
         when :call
-          add_instruction { "__#{op[:function_index]}(#{@stack.pop})" }
+          add_instruction { "__#{instr[:function_index]}(#{@stack.pop})" }
         when :sqrt
           add_instruction { "Math.sqrt(#{@stack.pop})" }
         when :end
