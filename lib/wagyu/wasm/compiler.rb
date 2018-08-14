@@ -26,15 +26,15 @@ module Wagyu::Wasm
         when :const
           add_instruction { instr[:value].to_s }
         when :eq
-          add_instruction { "#{@stack.pop} == #{@stack.pop}" }
+          add_instruction { a, b = @stack.pop(2); "#{a} == #{b}" }
         when :get_local
           @stack << locals[instr[:local_index]]
         when :add
-          add_instruction { "#{@stack.pop} + #{@stack.pop}" }
+          add_instruction { a, b = @stack.pop(2); "#{a} + #{b}" }
         when :sub
-          add_instruction { a,b = @stack.pop(2); "#{a} - #{b}" }
+          add_instruction { a, b = @stack.pop(2); "#{a} - #{b}" }
         when :mul
-          add_instruction { "#{@stack.pop} * #{@stack.pop}" }
+          add_instruction { a, b = @stack.pop(2); "#{a} * #{b}" }
         when :call
           add_instruction { "__#{instr[:function_index]}(#{@stack.pop})" }
         when :sqrt
