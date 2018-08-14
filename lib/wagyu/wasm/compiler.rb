@@ -10,11 +10,11 @@ module Wagyu::Wasm
     end
 
     def compile(function_index, function_body, types)
-      params = types.params.map.with_index{|type, i| "local_#{i}"}
+      params = types.params.map.with_index{|type, i| "p#{i}"}
 
       locals = params # TODO: add function_body.locals
 
-      @code << "def __#{function_index}(#{params.join(", ")})"
+      @code << "def m#{function_index}(#{params.join(", ")})"
 
       function_body.code.each do |instr|
         case instr[:name]
@@ -36,7 +36,7 @@ module Wagyu::Wasm
         when :mul
           add_instruction { a, b = @stack.pop(2); "#{a} * #{b}" }
         when :call
-          add_instruction { "__#{instr[:function_index]}(#{@stack.pop})" }
+          add_instruction { "m#{instr[:function_index]}(#{@stack.pop})" }
         when :sqrt
           add_instruction { "Math.sqrt(#{@stack.pop})" }
         when :end
@@ -54,7 +54,7 @@ module Wagyu::Wasm
     end
 
     def add_instruction
-      var = "var_#{@var_num}"
+      var = "v#{@var_num}"
       @code << "#{var} = #{yield}"
       @stack << var
       @var_num += 1
@@ -90,7 +90,7 @@ module Wagyu::Wasm
         if rep.export_section
           rep.export_section.exports.each_with_index do |export_entry, i|
             if export_entry.kind == :function
-              alias_method export_entry.field.to_sym, "__#{export_entry.index}".to_sym
+              alias_method export_entry.field.to_sym, "m#{export_entry.index}".to_sym
             end
           end
         end
