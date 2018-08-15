@@ -50,4 +50,34 @@ class WasmTest < Minitest::Test
       assert_equal(55, result)
     end
   end
+
+  def test_01
+    open("#{__dir__}/data/test01.wasm") do |f|
+      klass = Wagyu::Wasm.compile_streaming(f)
+      instance = Struct.new(:exports).new(klass.new)
+
+      result = instance.exports.test()
+      assert_equal(1, result)
+    end
+  end
+
+  def test_02
+    open("#{__dir__}/data/test02.wasm") do |f|
+      klass = Wagyu::Wasm.compile_streaming(f)
+      instance = Struct.new(:exports).new(klass.new)
+
+      result = instance.exports.test()
+      assert_equal(1, result)
+    end
+  end
+
+  def test_03
+    open("#{__dir__}/data/test03.wasm") do |f|
+      klass = Wagyu::Wasm.compile_streaming(f)
+      instance = Struct.new(:exports).new(klass.new)
+
+      result = instance.exports.test()
+      assert_equal(1, result)
+    end
+  end
 end

@@ -20,32 +20,91 @@ module Wagyu::Wasm
 
       @code << "def m#{function_index}(#{params.join(", ")})"
 
+      controls = []
+
       function_body.code.each do |instr|
         case instr[:name]
         when :if
-          add_instruction { "if #{@stack.pop}" }
+          var = instr[:sig] == :empty_block_type ? nil : add_instruction { "nil" }
+          controls << {type: :if, sig: instr[:sig], var: var, stack_depth: @stack.length}
+          @code << "if #{@stack.pop}"
         when :else
-          @code << @stack.pop
+          control = controls.last
+          raise "else must be called inside an if" if control.nil? || control[:type] != :if
+
+          @code << "#{control[:var]} = #{@stack.pop}" unless control[:sig] == :empty_block_type
           @code << "else"
         when :block
-          @code << "catch(:b1) do"
-          # TODO: catch clause can have a return value by passing the second argument to throw
-        when :loop
+          var = instr[:sig] == :empty_block_type ? nil : add_instruction { "nil" }
+          controls << {type: :block, sig: instr[:sig], var: var, stack_depth: @stack.length}
           @code << "while true"
-          # TODO: how to handle when loop returns a value?
+        when :loop
+          var = instr[:sig] == :empty_block_type ? nil : add_instruction { "nil" }
+          controls << {type: :loop, sig: instr[:sig], var: var, stack_depth: @stack.length}
+          @code << "while true"
         when :br_if
-          @code << "throw :b1 if #{@stack.pop}"
+          raise "br must be called inside control flow" if controls.empty?
+
+          control = controls.last
+          case control[:type]
+          when :block
+            # forward branch
+
+            condition = @stack.pop
+            @code << "#{control[:var]} = #{@stack.pop}" unless control[:sig] == :empty_block_type
+            @code << "break if #{condition}"
+
+          when :loop
+            # backward branch
+
+            condition = @stack.pop
+            @code << "#{control[:var]} = #{@stack.pop}" unless control[:sig] == :empty_block_type
+            @code << "next if #{condition}"
+
+          else
+            # TODO: handle `if`
+            raise "br must be called inside control flow" if controls.empty?
+          end
+
+          # https://www.w3.org/TR/wasm-core-1/#instructions%E2%91%A0
+          # Taking a branch unwinds the operand stack up to the height where the targeted structured control instruction was entered.
+          @stack.slice!(control[:stack_depth], @stack.length)
+
           # TODO: support multi-level nes
         when :br
-          if instr[:relative_depth] == 0
+          raise "br must be called inside block or loop" if controls.empty?
+
+          control = controls.last
+          case control[:type]
+          when :block
+            # forward branch
+
+            @code << "#{control[:var]} = #{@stack.pop}" unless control[:sig] == :empty_block_type
+            @code << "break"
+
+          when :loop
+            # backward branch
+
+            @code << "#{control[:var]} = #{@stack.pop}" unless control[:sig] == :empty_block_type
             @code << "next"
+
           else
-            raise "Not implemented"
+            # TODO: handle `if`
+            raise "br must be called inside block or loop" if controls.empty?
           end
+
+          # https://www.w3.org/TR/wasm-core-1/#instructions%E2%91%A0
+          # Taking a branch unwinds the operand stack up to the height where the targeted structured control instruction was entered.
+          @stack.slice!(control[:stack_depth], @stack.length)
+
         when :const
           add_instruction { instr[:value].to_s }
         when :eq
           add_instruction { a, b = @stack.pop(2); "#{a} == #{b}" }
+        when :ne
+          add_instruction { a, b = @stack.pop(2); "#{a} != #{b}" }
+        when :eqz
+          add_instruction { "#{@stack.pop} == 0" }
         when :ge_u, :ge_s
           add_instruction { a, b = @stack.pop(2); "#{a} >= #{b}" }
         when :gt_u, :ge_s
@@ -57,7 +116,7 @@ module Wagyu::Wasm
         when :set_local
           @code << "#{locals[instr[:local_index]]} = #{@stack.pop}"
         when :get_local
-          @stack << locals[instr[:local_index]]
+          add_instruction { locals[instr[:local_index]] }
         when :add
           add_instruction { a, b = @stack.pop(2); "#{a} + #{b}" }
         when :sub
@@ -69,7 +128,19 @@ module Wagyu::Wasm
         when :sqrt
           add_instruction { "Math.sqrt(#{@stack.pop})" }
         when :end
-          @code << @stack.pop unless @stack.empty?
+          control = controls.pop
+          if control.nil? # end of function
+            # TODO: what happens when the function has no return value?
+            @code << @stack.pop
+          else
+            if control[:type] == :if
+              @code << "#{control[:var]} = #{@stack.pop}" unless control[:sig] == :empty_block_type
+            elsif control[:type] == :block
+              @code << "break"
+            elsif control[:type] == :loop
+              @code << "break"
+            end
+          end
           @code << "end"
         else
           raise StandardError.new("Unknown instruction: #{instr[:name]}")
@@ -87,6 +158,7 @@ module Wagyu::Wasm
       @code << "#{var} = #{yield}"
       @stack << var
       @var_num += 1
+      var
     end
   end
 
