@@ -25,78 +25,59 @@ module Wagyu::Wasm
       function_body.code.each do |instr|
         case instr[:name]
         when :if
+          condition = @stack.pop
           var = instr[:sig] == :empty_block_type ? nil : add_instruction { "nil" }
           controls << {type: :if, sig: instr[:sig], var: var, stack_depth: @stack.length}
-          @code << "if #{@stack.pop}"
+          @code << "depth = _if(#{condition}, ->{"
         when :else
           control = controls.last
           raise "else must be called inside an if" if control.nil? || control[:type] != :if
 
           @code << "#{control[:var]} = #{@stack.pop}" unless control[:sig] == :empty_block_type
-          @code << "else"
+          @code << "-1"
+          @code << "}){ # else"
         when :block
           var = instr[:sig] == :empty_block_type ? nil : add_instruction { "nil" }
           controls << {type: :block, sig: instr[:sig], var: var, stack_depth: @stack.length}
-          @code << "while true"
+          @code << "depth = _block{"
         when :loop
           var = instr[:sig] == :empty_block_type ? nil : add_instruction { "nil" }
           controls << {type: :loop, sig: instr[:sig], var: var, stack_depth: @stack.length}
-          @code << "while true"
+          @code << "depth = _loop{"
         when :br_if
           raise "br must be called inside control flow" if controls.empty?
 
-          control = controls.last
-          case control[:type]
-          when :block
-            # forward branch
+          condition = @stack.pop
 
-            condition = @stack.pop
-            @code << "#{control[:var]} = #{@stack.pop}" unless control[:sig] == :empty_block_type
-            @code << "break if #{condition}"
+          tgt = controls[-1-instr[:relative_depth]]
+          @code << "#{tgt[:var]} = #{@stack.last}" if tgt[:var] # NOTICE: not @stack.pop
 
-          when :loop
-            # backward branch
-
-            condition = @stack.pop
-            @code << "#{control[:var]} = #{@stack.pop}" unless control[:sig] == :empty_block_type
-            @code << "next if #{condition}"
-
-          else
-            # TODO: handle `if`
-            raise "br must be called inside control flow" if controls.empty?
-          end
-
-          # https://www.w3.org/TR/wasm-core-1/#instructions%E2%91%A0
-          # Taking a branch unwinds the operand stack up to the height where the targeted structured control instruction was entered.
-          @stack.slice!(control[:stack_depth], @stack.length)
-
-          # TODO: support multi-level nes
+          @code << "next #{instr[:relative_depth]} if #{condition}"
         when :br
           raise "br must be called inside block or loop" if controls.empty?
 
-          control = controls.last
-          case control[:type]
-          when :block
-            # forward branch
+          tgt = controls[-1-instr[:relative_depth]]
+          @code << "#{tgt[:var]} = #{@stack.last}" if tgt[:var] # NOTICE: not @stack.pop
+          # TODO: no instructions should follow br, but when they come, br must be treated as stack-polymorphic.
 
-            @code << "#{control[:var]} = #{@stack.pop}" unless control[:sig] == :empty_block_type
-            @code << "break"
+          @code << "next #{instr[:relative_depth]}"
+        when :end
+          control = controls.pop
 
-          when :loop
-            # backward branch
-
-            @code << "#{control[:var]} = #{@stack.pop}" unless control[:sig] == :empty_block_type
-            @code << "next"
-
+          if control.nil? # end of function
+            # TODO: what happens when the function has no return value?
+            @code << @stack.pop
+            @code << "end"
           else
-            # TODO: handle `if`
-            raise "br must be called inside block or loop" if controls.empty?
+            @code << "#{control[:var]} = #{@stack.pop}" if control[:var]
+            @code << "-1"
+            @code << "}"
+            @code << "next depth - 1 if depth > 0" unless controls.empty?
+
+            # https://www.w3.org/TR/wasm-core-1/#instructions%E2%91%A0
+            # Taking a branch unwinds the operand stack up to the height where the targeted structured control instruction was entered.
+            @stack.slice!(control[:stack_depth], @stack.length)
           end
-
-          # https://www.w3.org/TR/wasm-core-1/#instructions%E2%91%A0
-          # Taking a branch unwinds the operand stack up to the height where the targeted structured control instruction was entered.
-          @stack.slice!(control[:stack_depth], @stack.length)
-
         when :const
           add_instruction { instr[:value].to_s }
         when :eq
@@ -127,21 +108,6 @@ module Wagyu::Wasm
           add_instruction { "m#{instr[:function_index]}(#{@stack.pop})" }
         when :sqrt
           add_instruction { "Math.sqrt(#{@stack.pop})" }
-        when :end
-          control = controls.pop
-          if control.nil? # end of function
-            # TODO: what happens when the function has no return value?
-            @code << @stack.pop
-          else
-            if control[:type] == :if
-              @code << "#{control[:var]} = #{@stack.pop}" unless control[:sig] == :empty_block_type
-            elsif control[:type] == :block
-              @code << "break"
-            elsif control[:type] == :loop
-              @code << "break"
-            end
-          end
-          @code << "end"
         else
           raise StandardError.new("Unknown instruction: #{instr[:name]}")
         end
@@ -174,6 +140,28 @@ module Wagyu::Wasm
       # pp rep
 
       mod = Class.new do |c|
+        def _if(condition, then_proc, &else_block)
+          if condition
+            then_proc.call
+          elsif else_block
+            yield else_block
+          else
+            -1
+          end
+        end
+
+        def _loop(&block)
+          while true
+            depth = yield block
+            next if depth == 0
+            return depth
+          end
+        end
+
+        def _block(&block)
+          yield block
+        end
+
         if rep.function_section
           rep.function_section.types.each_with_index do |type_idx, func_idx|
 
