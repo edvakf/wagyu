@@ -16,104 +16,108 @@ module Wagyu::Wasm
 
       locals = 0.upto(local_count-1).map{|i| "l#{i}" }
 
-      locals = params + locals
+      @locals = params + locals
 
       @code << "def _f#{function_index}(#{params.join(", ")})"
 
       @controls = []
 
       function_body.code.each do |instr|
-        case instr[:name]
-        when :if
-          condition = @stack.pop
-          new_control(instr)
-          @code << "depth = _if(#{condition}, ->{"
-        when :else
-          control = @controls.last
-          raise "else must be called inside an if" if control.nil? || control[:type] != :if
-
-          @code << "#{control[:var]} = #{@stack.pop}" unless control[:sig] == :empty_block_type
-          @code << "-1"
-          @code << "}){ # else"
-        when :block
-          new_control(instr)
-          @code << "depth = _block{"
-        when :loop
-          new_control(instr)
-          @code << "depth = _loop{"
-        when :br_if
-          raise "br must be called inside control flow" if @controls.empty?
-
-          condition = @stack.pop
-
-          tgt = @controls[-1-instr[:relative_depth]]
-          @code << "#{tgt[:var]} = #{@stack.last}" if tgt[:var] # NOTICE: not @stack.pop
-
-          @code << "next #{instr[:relative_depth]} if #{condition}"
-        when :br
-          raise "br must be called inside block or loop" if @controls.empty?
-
-          tgt = @controls[-1-instr[:relative_depth]]
-          @code << "#{tgt[:var]} = #{@stack.last}" if tgt[:var] # NOTICE: not @stack.pop
-          # TODO: no instructions should follow br, but when they come, br must be treated as stack-polymorphic.
-
-          @code << "next #{instr[:relative_depth]}"
-        when :end
-          control = @controls.pop
-
-          if control.nil? # end of function
-            # TODO: what happens when the function has no return value?
-            @code << @stack.pop
-            @code << "end"
-          else
-            @code << "#{control[:var]} = #{@stack.pop}" if control[:var]
-            @code << "-1"
-            @code << "}"
-            @code << "next depth - 1 if depth > 0" unless @controls.empty?
-
-            # https://www.w3.org/TR/wasm-core-1/#instructions%E2%91%A0
-            # Taking a branch unwinds the operand stack up to the height where the targeted structured control instruction was entered.
-            @stack.slice!(control[:stack_depth], @stack.length)
-          end
-        when :const
-          new_var { instr[:value].to_s }
-        when :eq
-          new_var { a, b = @stack.pop(2); "#{a} == #{b}" }
-        when :ne
-          new_var { a, b = @stack.pop(2); "#{a} != #{b}" }
-        when :eqz
-          new_var { "#{@stack.pop} == 0" }
-        when :ge_u, :ge_s
-          new_var { a, b = @stack.pop(2); "#{a} >= #{b}" }
-        when :gt_u, :ge_s
-          new_var { a, b = @stack.pop(2); "#{a} > #{b}" }
-        when :le_u, :le_s
-          new_var { a, b = @stack.pop(2); "#{a} <= #{b}" }
-        when :lt_u, :le_s
-          new_var { a, b = @stack.pop(2); "#{a} < #{b}" }
-        when :set_local
-          @code << "#{locals[instr[:local_index]]} = #{@stack.pop}"
-        when :get_local
-          new_var { locals[instr[:local_index]] }
-        when :add
-          new_var { a, b = @stack.pop(2); "#{a} + #{b}" }
-        when :sub
-          new_var { a, b = @stack.pop(2); "#{a} - #{b}" }
-        when :mul
-          new_var { a, b = @stack.pop(2); "#{a} * #{b}" }
-        when :call
-          new_var { "_f#{instr[:function_index]}(#{@stack.pop})" }
-        when :sqrt
-          new_var { "Math.sqrt(#{@stack.pop})" }
-        else
-          raise StandardError.new("Unknown instruction: #{instr[:name]}")
-        end
+        compile_instr(instr)
       end
 
       # p @stack # should assert stack is empty??
       # pp @code
 
       return @code.join("\n")
+    end
+
+    def compile_instr(instr)
+      case instr[:name]
+      when :if
+        condition = @stack.pop
+        new_control(instr)
+        @code << "depth = _if(#{condition}, ->{"
+      when :else
+        control = @controls.last
+        raise "else must be called inside an if" if control.nil? || control[:type] != :if
+
+        @code << "#{control[:var]} = #{@stack.pop}" unless control[:sig] == :empty_block_type
+        @code << "-1"
+        @code << "}){ # else"
+      when :block
+        new_control(instr)
+        @code << "depth = _block{"
+      when :loop
+        new_control(instr)
+        @code << "depth = _loop{"
+      when :br_if
+        raise "br must be called inside control flow" if @controls.empty?
+
+        condition = @stack.pop
+
+        tgt = @controls[-1-instr[:relative_depth]]
+        @code << "#{tgt[:var]} = #{@stack.last}" if tgt[:var] # NOTICE: not @stack.pop
+
+        @code << "next #{instr[:relative_depth]} if #{condition}"
+      when :br
+        raise "br must be called inside block or loop" if @controls.empty?
+
+        tgt = @controls[-1-instr[:relative_depth]]
+        @code << "#{tgt[:var]} = #{@stack.last}" if tgt[:var] # NOTICE: not @stack.pop
+        # TODO: no instructions should follow br, but when they come, br must be treated as stack-polymorphic.
+
+        @code << "next #{instr[:relative_depth]}"
+      when :end
+        control = @controls.pop
+
+        if control.nil? # end of function
+          # TODO: what happens when the function has no return value?
+          @code << @stack.pop
+          @code << "end"
+        else
+          @code << "#{control[:var]} = #{@stack.pop}" if control[:var]
+          @code << "-1"
+          @code << "}"
+          @code << "next depth - 1 if depth > 0" unless @controls.empty?
+
+          # https://www.w3.org/TR/wasm-core-1/#instructions%E2%91%A0
+          # Taking a branch unwinds the operand stack up to the height where the targeted structured control instruction was entered.
+          @stack.slice!(control[:stack_depth], @stack.length)
+        end
+      when :const
+        new_var { instr[:value].to_s }
+      when :eq
+        new_var { a, b = @stack.pop(2); "#{a} == #{b}" }
+      when :ne
+        new_var { a, b = @stack.pop(2); "#{a} != #{b}" }
+      when :eqz
+        new_var { "#{@stack.pop} == 0" }
+      when :ge_u, :ge_s
+        new_var { a, b = @stack.pop(2); "#{a} >= #{b}" }
+      when :gt_u, :ge_s
+        new_var { a, b = @stack.pop(2); "#{a} > #{b}" }
+      when :le_u, :le_s
+        new_var { a, b = @stack.pop(2); "#{a} <= #{b}" }
+      when :lt_u, :le_s
+        new_var { a, b = @stack.pop(2); "#{a} < #{b}" }
+      when :set_local
+        @code << "#{@locals[instr[:local_index]]} = #{@stack.pop}"
+      when :get_local
+        new_var { @locals[instr[:local_index]] }
+      when :add
+        new_var { a, b = @stack.pop(2); "#{a} + #{b}" }
+      when :sub
+        new_var { a, b = @stack.pop(2); "#{a} - #{b}" }
+      when :mul
+        new_var { a, b = @stack.pop(2); "#{a} * #{b}" }
+      when :call
+        new_var { "_f#{instr[:function_index]}(#{@stack.pop})" }
+      when :sqrt
+        new_var { "Math.sqrt(#{@stack.pop})" }
+      else
+        raise StandardError.new("Unknown instruction: #{instr[:name]}")
+      end
     end
 
     def new_control(instr)
