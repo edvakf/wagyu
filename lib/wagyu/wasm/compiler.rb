@@ -20,49 +20,46 @@ module Wagyu::Wasm
 
       @code << "def m#{function_index}(#{params.join(", ")})"
 
-      controls = []
+      @controls = []
 
       function_body.code.each do |instr|
         case instr[:name]
         when :if
           condition = @stack.pop
-          var = instr[:sig] == :empty_block_type ? nil : new_var { "nil" }
-          controls << {type: :if, sig: instr[:sig], var: var, stack_depth: @stack.length}
+          new_control(instr)
           @code << "depth = _if(#{condition}, ->{"
         when :else
-          control = controls.last
+          control = @controls.last
           raise "else must be called inside an if" if control.nil? || control[:type] != :if
 
           @code << "#{control[:var]} = #{@stack.pop}" unless control[:sig] == :empty_block_type
           @code << "-1"
           @code << "}){ # else"
         when :block
-          var = instr[:sig] == :empty_block_type ? nil : new_var { "nil" }
-          controls << {type: :block, sig: instr[:sig], var: var, stack_depth: @stack.length}
+          new_control(instr)
           @code << "depth = _block{"
         when :loop
-          var = instr[:sig] == :empty_block_type ? nil : new_var { "nil" }
-          controls << {type: :loop, sig: instr[:sig], var: var, stack_depth: @stack.length}
+          new_control(instr)
           @code << "depth = _loop{"
         when :br_if
-          raise "br must be called inside control flow" if controls.empty?
+          raise "br must be called inside control flow" if @controls.empty?
 
           condition = @stack.pop
 
-          tgt = controls[-1-instr[:relative_depth]]
+          tgt = @controls[-1-instr[:relative_depth]]
           @code << "#{tgt[:var]} = #{@stack.last}" if tgt[:var] # NOTICE: not @stack.pop
 
           @code << "next #{instr[:relative_depth]} if #{condition}"
         when :br
-          raise "br must be called inside block or loop" if controls.empty?
+          raise "br must be called inside block or loop" if @controls.empty?
 
-          tgt = controls[-1-instr[:relative_depth]]
+          tgt = @controls[-1-instr[:relative_depth]]
           @code << "#{tgt[:var]} = #{@stack.last}" if tgt[:var] # NOTICE: not @stack.pop
           # TODO: no instructions should follow br, but when they come, br must be treated as stack-polymorphic.
 
           @code << "next #{instr[:relative_depth]}"
         when :end
-          control = controls.pop
+          control = @controls.pop
 
           if control.nil? # end of function
             # TODO: what happens when the function has no return value?
@@ -72,7 +69,7 @@ module Wagyu::Wasm
             @code << "#{control[:var]} = #{@stack.pop}" if control[:var]
             @code << "-1"
             @code << "}"
-            @code << "next depth - 1 if depth > 0" unless controls.empty?
+            @code << "next depth - 1 if depth > 0" unless @controls.empty?
 
             # https://www.w3.org/TR/wasm-core-1/#instructions%E2%91%A0
             # Taking a branch unwinds the operand stack up to the height where the targeted structured control instruction was entered.
@@ -117,6 +114,16 @@ module Wagyu::Wasm
       # pp @code
 
       return @code.join("\n")
+    end
+
+    def new_control(instr)
+      var =
+        if instr[:sig] == :empty_block_type
+          nil
+        else
+          new_var { "nil" }
+        end
+      @controls << {type: instr[:name], var: var, stack_depth: @stack.length}
     end
 
     def new_var
