@@ -18,7 +18,7 @@ module Wagyu::Wasm
 
       locals = params + locals
 
-      @code << "def m#{function_index}(#{params.join(", ")})"
+      @code << "def _f#{function_index}(#{params.join(", ")})"
 
       @controls = []
 
@@ -102,7 +102,7 @@ module Wagyu::Wasm
         when :mul
           new_var { a, b = @stack.pop(2); "#{a} * #{b}" }
         when :call
-          new_var { "m#{instr[:function_index]}(#{@stack.pop})" }
+          new_var { "_f#{instr[:function_index]}(#{@stack.pop})" }
         when :sqrt
           new_var { "Math.sqrt(#{@stack.pop})" }
         else
@@ -186,7 +186,10 @@ module Wagyu::Wasm
         if rep.export_section
           rep.export_section.exports.each_with_index do |export_entry, i|
             if export_entry.kind == :function
-              alias_method export_entry.field.to_sym, "m#{export_entry.index}".to_sym
+
+              raise StandardError("A function must not start with an underscore") if export_entry.field.start_with?("_")
+
+              alias_method export_entry.field.to_sym, "_f#{export_entry.index}".to_sym
             end
           end
         end
