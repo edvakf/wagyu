@@ -26,7 +26,7 @@ module Wagyu::Wasm
         case instr[:name]
         when :if
           condition = @stack.pop
-          var = instr[:sig] == :empty_block_type ? nil : add_instruction { "nil" }
+          var = instr[:sig] == :empty_block_type ? nil : new_var { "nil" }
           controls << {type: :if, sig: instr[:sig], var: var, stack_depth: @stack.length}
           @code << "depth = _if(#{condition}, ->{"
         when :else
@@ -37,11 +37,11 @@ module Wagyu::Wasm
           @code << "-1"
           @code << "}){ # else"
         when :block
-          var = instr[:sig] == :empty_block_type ? nil : add_instruction { "nil" }
+          var = instr[:sig] == :empty_block_type ? nil : new_var { "nil" }
           controls << {type: :block, sig: instr[:sig], var: var, stack_depth: @stack.length}
           @code << "depth = _block{"
         when :loop
-          var = instr[:sig] == :empty_block_type ? nil : add_instruction { "nil" }
+          var = instr[:sig] == :empty_block_type ? nil : new_var { "nil" }
           controls << {type: :loop, sig: instr[:sig], var: var, stack_depth: @stack.length}
           @code << "depth = _loop{"
         when :br_if
@@ -79,35 +79,35 @@ module Wagyu::Wasm
             @stack.slice!(control[:stack_depth], @stack.length)
           end
         when :const
-          add_instruction { instr[:value].to_s }
+          new_var { instr[:value].to_s }
         when :eq
-          add_instruction { a, b = @stack.pop(2); "#{a} == #{b}" }
+          new_var { a, b = @stack.pop(2); "#{a} == #{b}" }
         when :ne
-          add_instruction { a, b = @stack.pop(2); "#{a} != #{b}" }
+          new_var { a, b = @stack.pop(2); "#{a} != #{b}" }
         when :eqz
-          add_instruction { "#{@stack.pop} == 0" }
+          new_var { "#{@stack.pop} == 0" }
         when :ge_u, :ge_s
-          add_instruction { a, b = @stack.pop(2); "#{a} >= #{b}" }
+          new_var { a, b = @stack.pop(2); "#{a} >= #{b}" }
         when :gt_u, :ge_s
-          add_instruction { a, b = @stack.pop(2); "#{a} > #{b}" }
+          new_var { a, b = @stack.pop(2); "#{a} > #{b}" }
         when :le_u, :le_s
-          add_instruction { a, b = @stack.pop(2); "#{a} <= #{b}" }
+          new_var { a, b = @stack.pop(2); "#{a} <= #{b}" }
         when :lt_u, :le_s
-          add_instruction { a, b = @stack.pop(2); "#{a} < #{b}" }
+          new_var { a, b = @stack.pop(2); "#{a} < #{b}" }
         when :set_local
           @code << "#{locals[instr[:local_index]]} = #{@stack.pop}"
         when :get_local
-          add_instruction { locals[instr[:local_index]] }
+          new_var { locals[instr[:local_index]] }
         when :add
-          add_instruction { a, b = @stack.pop(2); "#{a} + #{b}" }
+          new_var { a, b = @stack.pop(2); "#{a} + #{b}" }
         when :sub
-          add_instruction { a, b = @stack.pop(2); "#{a} - #{b}" }
+          new_var { a, b = @stack.pop(2); "#{a} - #{b}" }
         when :mul
-          add_instruction { a, b = @stack.pop(2); "#{a} * #{b}" }
+          new_var { a, b = @stack.pop(2); "#{a} * #{b}" }
         when :call
-          add_instruction { "m#{instr[:function_index]}(#{@stack.pop})" }
+          new_var { "m#{instr[:function_index]}(#{@stack.pop})" }
         when :sqrt
-          add_instruction { "Math.sqrt(#{@stack.pop})" }
+          new_var { "Math.sqrt(#{@stack.pop})" }
         else
           raise StandardError.new("Unknown instruction: #{instr[:name]}")
         end
@@ -119,7 +119,7 @@ module Wagyu::Wasm
       return @code.join("\n")
     end
 
-    def add_instruction
+    def new_var
       var = "v#{@var_num}"
       @code << "#{var} = #{yield}"
       @stack << var
