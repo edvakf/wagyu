@@ -49,10 +49,9 @@ class WasmTest < Minitest::Test
     assert_equal(1, result)
   end
 
-  def instantiate(file)
+  def instantiate(file, import_object: nil)
     open("#{__dir__}/data/#{file}") do |f|
-      klass = Wagyu::Wasm.compile_streaming(f)
-      instance = Struct.new(:exports).new(klass.new)
+      Wagyu::Wasm.instantiate_streaming(f)
     end
   end
 end

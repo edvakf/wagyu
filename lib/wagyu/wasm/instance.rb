@@ -3,8 +3,8 @@ module Wagyu::Wasm
     attr_reader :exports
 
     # mod: Module
-    def initialize(mod, import_object)
-      mod.new(import_object)
+    def initialize(mod)
+      @exports = mod.module_class.new()
     end
   end
 end

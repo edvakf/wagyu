@@ -1,4 +1,5 @@
 require "wagyu/wasm/parser"
+require "wagyu/wasm/module"
 require "pp"
 
 module Wagyu::Wasm
@@ -150,49 +151,29 @@ module Wagyu::Wasm
 
       # pp rep
 
-      mod = Class.new do |c|
-        def _if(condition, then_proc, &else_block)
-          if condition
-            then_proc.call
-          elsif else_block
-            yield else_block
-          else
-            -1
-          end
+      mod = Module.new # mod is an instance of Module, which inherits Class
+
+      if rep.function_section
+        rep.function_section.types.each_with_index do |type_idx, func_idx|
+
+          method = MethodCompiler.new.compile(
+            func_idx,
+            rep.code_section.bodies[func_idx],
+            rep.type_section.types[type_idx]
+          )
+
+          # puts method
+          mod.module_class.class_eval(method)
         end
+      end
 
-        def _loop(&block)
-          while true
-            depth = yield block
-            next if depth == 0
-            return depth
-          end
-        end
+      if rep.export_section
+        rep.export_section.exports.each_with_index do |export_entry, i|
+          if export_entry.kind == :function
 
-        def _block(&block)
-          yield block
-        end
+            raise StandardError("A function must not start with an underscore") if export_entry.field.start_with?("_")
 
-        if rep.function_section
-          rep.function_section.types.each_with_index do |type_idx, func_idx|
-
-            method = MethodCompiler.new.compile(
-              func_idx,
-              rep.code_section.bodies[func_idx],
-              rep.type_section.types[type_idx]
-            )
-
-            # puts method
-            eval(method)
-          end
-        end
-
-        if rep.export_section
-          rep.export_section.exports.each_with_index do |export_entry, i|
-            if export_entry.kind == :function
-
-              raise StandardError("A function must not start with an underscore") if export_entry.field.start_with?("_")
-
+            mod.module_class.class_eval do
               alias_method export_entry.field.to_sym, "_f#{export_entry.index}".to_sym
             end
           end

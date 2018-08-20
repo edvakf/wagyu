@@ -1,11 +1,32 @@
 module Wagyu::Wasm
-  # usage:
-  # mod = Module.new(binary) or Wasm.compile(binary)
-  # Wasm.instantiate(mod, import_object)
+  # instantiate this class through Wagyu::Wasm.compile
   class Module
-    def initialize(binary)
-      io = StringIO.new(binary)
-      Compiler.new(io).compile
+    attr_reader :module_class
+
+    def initialize
+      @module_class = Class.new do
+        def _if(condition, then_proc, &else_block)
+          if condition
+            then_proc.call
+          elsif else_block
+            yield else_block
+          else
+            -1
+          end
+        end
+
+        def _loop(&block)
+          while true
+            depth = yield block
+            next if depth == 0
+            return depth
+          end
+        end
+
+        def _block(&block)
+          yield block
+        end
+      end
     end
   end
 end
