@@ -51,8 +51,8 @@ class WasmTest < Minitest::Test
     end
   end
 
-  def test_01
-    open("#{__dir__}/data/test01.wasm") do |f|
+  def test_control01
+    open("#{__dir__}/data/control01.wasm") do |f|
       klass = Wagyu::Wasm.compile_streaming(f)
       instance = Struct.new(:exports).new(klass.new)
 
@@ -61,8 +61,8 @@ class WasmTest < Minitest::Test
     end
   end
 
-  def test_02
-    open("#{__dir__}/data/test02.wasm") do |f|
+  def test_control02
+    open("#{__dir__}/data/control02.wasm") do |f|
       klass = Wagyu::Wasm.compile_streaming(f)
       instance = Struct.new(:exports).new(klass.new)
 
@@ -71,8 +71,8 @@ class WasmTest < Minitest::Test
     end
   end
 
-  def test_03
-    open("#{__dir__}/data/test03.wasm") do |f|
+  def test_control03
+    open("#{__dir__}/data/control03.wasm") do |f|
       klass = Wagyu::Wasm.compile_streaming(f)
       instance = Struct.new(:exports).new(klass.new)
 
