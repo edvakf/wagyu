@@ -5,6 +5,10 @@ module Wagyu::Wasm
 
     def initialize
       @module_class = Class.new do
+        def initialize(import_object)
+          @import_object = import_object
+        end
+
         def _if(condition, then_proc, &else_block)
           if condition
             then_proc.call

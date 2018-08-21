@@ -5,13 +5,13 @@ require "wagyu/wasm/instance"
 module Wagyu::Wasm
   class << self
     # return Instance
-    def instantiate(binary, import_object: nil)
+    def instantiate(binary, import_object = nil)
       instantiate_streaming(StringIO.new(binary), import_object)
     end
 
     # return Instance
-    def instantiate_streaming(io, import_object: nil)
-      Instance.new(compile_streaming(io)) # TODO: pass import_object
+    def instantiate_streaming(io, import_object = nil)
+      Instance.new(compile_streaming(io), import_object)
     end
 
     # return Module
