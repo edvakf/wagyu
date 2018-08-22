@@ -93,29 +93,29 @@ module Wagyu::Wasm
       when :const
         new_var { instr[:value].to_s }
       when :eq
-        new_var { a, b = @stack.pop(2); "#{a} == #{b}" }
+        new_var { @stack.pop(2).join(" == ") }
       when :ne
-        new_var { a, b = @stack.pop(2); "#{a} != #{b}" }
+        new_var { @stack.pop(2).join(" != ") }
       when :eqz
         new_var { "#{@stack.pop} == 0" }
       when :ge_u, :ge_s
-        new_var { a, b = @stack.pop(2); "#{a} >= #{b}" }
+        new_var { @stack.pop(2).join(" >= ") }
       when :gt_u, :ge_s
-        new_var { a, b = @stack.pop(2); "#{a} > #{b}" }
+        new_var { @stack.pop(2).join(" > ") }
       when :le_u, :le_s
-        new_var { a, b = @stack.pop(2); "#{a} <= #{b}" }
+        new_var { @stack.pop(2).join(" <= ") }
       when :lt_u, :le_s
-        new_var { a, b = @stack.pop(2); "#{a} < #{b}" }
+        new_var { @stack.pop(2).join(" < ") }
       when :set_local
         @code << "#{@locals[instr[:local_index]]} = #{@stack.pop}"
       when :get_local
         new_var { @locals[instr[:local_index]] }
       when :add
-        new_var { a, b = @stack.pop(2); "#{a} + #{b}" }
+        new_var { @stack.pop(2).join(" + ") }
       when :sub
-        new_var { a, b = @stack.pop(2); "#{a} - #{b}" }
+        new_var { @stack.pop(2).join(" - ") }
       when :mul
-        new_var { a, b = @stack.pop(2); "#{a} * #{b}" }
+        new_var { @stack.pop(2).join(" * ") }
       when :call
         n = @types[instr[:function_index]].params.length
         new_var { "_f#{instr[:function_index]}(#{@stack.pop(n).join(", ")})" }
