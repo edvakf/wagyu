@@ -49,9 +49,20 @@ class WasmTest < Minitest::Test
     assert_equal(1, result)
   end
 
-  def instantiate(file, import_object: nil)
+  def test_import
+    import_object = {
+      util: {
+        multiply: ->(a, b){a * b}
+      }
+    }
+    instance = instantiate("import.wasm", import_object)
+    result = instance.exports.twice(3)
+    assert_equal(6, result)
+  end
+
+  def instantiate(file, import_object = nil)
     open("#{__dir__}/data/#{file}") do |f|
-      Wagyu::Wasm.instantiate_streaming(f)
+      Wagyu::Wasm.instantiate_streaming(f, import_object)
     end
   end
 end

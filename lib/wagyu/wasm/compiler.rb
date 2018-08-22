@@ -10,12 +10,16 @@ module Wagyu::Wasm
       @code = []
     end
 
-    def compile(function_index, function_body, types)
-      params = types.params.map.with_index{|type, i| "p#{i}"}
+    def compile(function_index, function_body, type_index, types)
+      type = types[type_index]
+
+      params = type.params.map.with_index{|type, i| "p#{i}"}
 
       local_count = function_body.locals.map(&:count).sum
 
       locals = 0.upto(local_count-1).map{|i| "l#{i}" }
+
+      @types = types
 
       @locals = params + locals
 
@@ -113,7 +117,8 @@ module Wagyu::Wasm
       when :mul
         new_var { a, b = @stack.pop(2); "#{a} * #{b}" }
       when :call
-        new_var { "_f#{instr[:function_index]}(#{@stack.pop})" }
+        n = @types[instr[:function_index]].params.length
+        new_var { "_f#{instr[:function_index]}(#{@stack.pop(n).join(", ")})" }
       when :sqrt
         new_var { "Math.sqrt(#{@stack.pop})" }
       else
@@ -153,13 +158,37 @@ module Wagyu::Wasm
 
       mod = Module.new # mod is an instance of Module, which inherits Class
 
+      import_funcs = 0
+
+      if rep.import_section
+        rep.import_section.imports.each do |import_entry|
+          if import_entry.kind == :function
+            types = rep.type_section.types[import_entry.type]
+            params = types.params.map.with_index{|type, i| "p#{i}"}
+
+            # TODO: fix form of import_object
+            method = <<~EVAL
+              def _f#{import_funcs}(#{params.join(", ")})
+                @import_object[:#{import_entry.module}][:#{import_entry.field}].call(#{params.join(", ")})
+              end
+            EVAL
+
+            # puts method
+            mod.module_class.class_eval(method)
+
+            import_funcs += 1
+          end
+        end
+      end
+
       if rep.function_section
         rep.function_section.types.each_with_index do |type_idx, func_idx|
 
           method = MethodCompiler.new.compile(
-            func_idx,
+            func_idx + import_funcs,
             rep.code_section.bodies[func_idx],
-            rep.type_section.types[type_idx]
+            type_idx,
+            rep.type_section.types
           )
 
           # puts method

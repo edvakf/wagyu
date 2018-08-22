@@ -160,8 +160,8 @@ module Wagyu::Wasm
       case id
       when TypeID
         rep.type_section = read_type_section
-      #when ImportID
-        #rep.import_section = read_type_section
+      when ImportID
+        rep.import_section = read_import_section
       when FunctionID
         rep.function_section = read_function_section
       #when TableID
@@ -208,6 +208,65 @@ module Wagyu::Wasm
       end
 
       FuncType.new(form, params, results)
+    end
+
+    # ImportSection
+    def read_import_section
+      imports = Array.new(read_varuint) do
+        read_import_entry
+      end
+      ImportSection.new(imports)
+    end
+
+    def read_import_entry
+      module_len = read_varuint
+      module_str = read_bytes(module_len)
+      field_len = read_varuint
+      field_str = read_bytes(field_len)
+      kind = read_external_kind
+
+      case kind
+      when :function
+        type = read_varuint
+      when :table
+        type = read_table_type
+      when :memory
+        type = read_memory_type
+      when :global
+        type = read_global_type
+      else
+        raise ParseError, 'unknown kind'
+      end
+
+      ImportEntry.new(module_str, field_str, kind, type)
+    end
+
+    def read_global_type
+      content_type = read_value_type
+      mutability = read_varuint == 1 # varuint1 (bool)
+      GlobalType.new(content_type, mutability)
+    end
+
+    def read_table_type
+      element_type = read_elem_type
+      limits = read_resizable_limits
+      TableType.new(element_type, limits)
+    end
+
+    def read_memory_type
+      limits = read_resizable_limits
+      MemoryType.new(limits)
+    end
+
+    def read_resizable_limits
+      flags = read_varuint # 1 if the maximum field is present, 0 otherwise
+      initial = read_varuint # initial length (in units of table elements or wasm pages)
+      if flags == 1
+        maximum = read_varuint # only present if specified by flags
+      else
+        maximum = nil
+      end
+      ResizableLimits.new(flags, initial, maximum)
     end
 
     # FunctionSection

@@ -6,6 +6,7 @@ module Wagyu::Wasm
     def initialize
       @module_class = Class.new do
         def initialize(import_object)
+          # TODO: fix form of import_object. temporarily asigning directly
           @import_object = import_object
         end
 

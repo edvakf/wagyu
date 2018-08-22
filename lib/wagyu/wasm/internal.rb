@@ -43,7 +43,13 @@ module Wagyu::Wasm
     DataSection = Struct.new(:segments) # []DataSegment
     NameSection = Struct.new(:name, :funcs) # string, []FunctionNames
 
+    ImportEntry = Struct.new(:module, :field, :kind, :type) # str, str, ExternalKind,
+
     FuncType = Struct.new(:form, :params, :results) # ValueType, []ValueType, []ValueType where ValueType is varint7
+    GlobalType = Struct.new(:content_type, :mutability) # ValueType, bool (varuint1)
+    TableType = Struct.new(:element_type, :limits) # ValueType, ResizableLimits
+    MemoryType = Struct.new(:limits) # ResizableLimits
+    ResizableLimits = Struct.new(:flags, :initial, :maximum) # int, int, nullable int
 
     FunctionBody = Struct.new(:locals, :code)
     LocalEntry = Struct.new(:count, :type)
