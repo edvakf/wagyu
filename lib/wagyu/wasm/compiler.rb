@@ -110,6 +110,10 @@ module Wagyu::Wasm
         @code << "#{@locals[instr[:local_index]]} = #{@stack.pop}"
       when :get_local
         new_var { @locals[instr[:local_index]] }
+      when :set_global
+        @code << "@_g#{instr[:global_index]} = #{@stack.pop}"
+      when :get_global
+        new_var { "@_g#{instr[:global_index]}" }
       when :add
         new_var { @stack.pop(2).join(" + ") }
       when :sub
@@ -160,6 +164,10 @@ module Wagyu::Wasm
 
       import_funcs = 0
 
+      num_globals = 0
+
+      after_initialize = []
+
       if rep.import_section
         rep.import_section.imports.each do |import_entry|
           if import_entry.kind == :function
@@ -177,6 +185,25 @@ module Wagyu::Wasm
             mod.module_class.class_eval(method)
 
             import_funcs += 1
+          elsif import_entry.kind == :global
+            # TODO: assert the field is provided
+            after_initialize << "@_g#{num_globals} = @import_object[:#{import_entry.module}][:#{import_entry.field}]"
+            num_globals += 1
+          end
+        end
+      end
+
+      if rep.global_section
+        rep.global_section.globals.each do |global|
+          case global.expr[:name]
+          when :const
+            after_initialize << "@_g#{num_globals} = #{global.expr[:value]}"
+            num_globals += 1
+          when :get_global
+            after_initialize << "@_g#{num_globals} = @_g#{global.expr[:global_index]}"
+            num_globals += 1
+          else
+            raise StandardError("") # TODO
           end
         end
       end
@@ -208,6 +235,16 @@ module Wagyu::Wasm
           end
         end
       end
+
+      if rep.start_section
+        after_initialize << "_f#{rep.start_section.index}"
+      end
+
+      mod.module_class.class_eval( <<~AFTER_INITIALIZE )
+        def after_initialize
+          #{after_initialize.join("\n")}
+        end
+      AFTER_INITIALIZE
 
       mod
     end

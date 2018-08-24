@@ -168,12 +168,12 @@ module Wagyu::Wasm
         #rep.table_section = read_table_section
       #when MemoryID
         #rep.memory_section = read_memory_section
-      #when GlobalID
-        #rep.global_section = read_global_section
+      when GlobalID
+        rep.global_section = read_global_section
       when ExportID
         rep.export_section = read_export_section
-      #when StartID
-        #rep.start_section = read_start_section
+      when StartID
+        rep.start_section = read_start_section
       #when ElementID
         #rep.element_section = read_element_section
       when CodeID
@@ -277,6 +277,28 @@ module Wagyu::Wasm
       FunctionSection.new(types)
     end
 
+    # GlobalSection
+    def read_global_section
+      globals = Array.new(read_varuint) do
+        read_global
+      end
+      GlobalSection.new(globals)
+    end
+
+    def read_global
+      global_type = read_global_type
+      expr = read_constant_expr
+      Global.new(global_type, expr)
+    end
+
+    def read_constant_expr
+      expr_instr = read_instruction
+      # assert expr_instr[:name] == :const || expr_instr[:name] == :get_global
+      end_instr = read_instruction
+      # assert end_instr[:name] == :end
+      expr_instr
+    end
+
     # ExportSection
     def read_export_section
       exports = Array.new(read_varuint) do
@@ -292,6 +314,12 @@ module Wagyu::Wasm
       kind = read_external_kind
       index = read_varuint
       ExportEntry.new(field_str, kind, index)
+    end
+
+    # StartSection
+    def read_start_section
+      funcidx = read_varuint
+      StartSection.new(funcidx)
     end
 
     # CodeSection

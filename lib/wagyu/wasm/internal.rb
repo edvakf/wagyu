@@ -37,7 +37,7 @@ module Wagyu::Wasm
     MemorySection = Struct.new(:memories) # []MemoryType
     GlobalSection = Struct.new(:globals) # []GlobalVariable
     ExportSection = Struct.new(:exports) # []ExportEntry
-    StartSection = Struct.new(:index) # uint32
+    StartSection = Struct.new(:index) # uint32 (func index)
     ElementSection = Struct.new(:elements) # []ElemSegment
     CodeSection = Struct.new(:bodies) # []FunctionBody
     DataSection = Struct.new(:segments) # []DataSegment
@@ -53,6 +53,8 @@ module Wagyu::Wasm
 
     FunctionBody = Struct.new(:locals, :code)
     LocalEntry = Struct.new(:count, :type)
+
+    Global = Struct.new(:global_type, :expr) # GlobalType, instruction
 
     ExportEntry = Struct.new(:field, :kind, :index) # str, ExternalKind, int
   end

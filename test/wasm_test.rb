@@ -60,6 +60,19 @@ class WasmTest < Minitest::Test
     assert_equal(6, result)
   end
 
+  def test_global
+    import_object = {
+      env: {
+        initial: 3
+      }
+    }
+    instance = instantiate("global.wasm", import_object)
+    result = instance.exports.counter()
+    assert_equal(4, result)
+    result = instance.exports.counter()
+    assert_equal(5, result)
+  end
+
   def instantiate(file, import_object = nil)
     open("#{__dir__}/data/#{file}") do |f|
       Wagyu::Wasm.instantiate_streaming(f, import_object)

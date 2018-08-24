@@ -8,6 +8,8 @@ module Wagyu::Wasm
         def initialize(import_object)
           # TODO: fix form of import_object. temporarily asigning directly
           @import_object = import_object
+
+          after_initialize
         end
 
         def _if(condition, then_proc, &else_block)
