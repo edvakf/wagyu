@@ -73,6 +73,21 @@ class WasmTest < Minitest::Test
     assert_equal(5, result)
   end
 
+  def test_memory
+    str = "abcde"
+    len = str.length
+    mem = Wagyu::Wasm::Memory.new(initial: 1, maximum: 10)
+    mem.buffer[0, len] = str
+    import_object = {
+      env: {
+        str: mem
+      }
+    }
+    instance = instantiate("reverse.wasm", import_object)
+    instance.exports.reverse(len)
+    assert_equal(str.reverse, mem.buffer[0, len])
+  end
+
   def instantiate(file, import_object = nil)
     open("#{__dir__}/data/#{file}") do |f|
       Wagyu::Wasm.instantiate_streaming(f, import_object)

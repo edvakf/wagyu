@@ -243,7 +243,7 @@ module Wagyu::Wasm
 
     def read_global_type
       content_type = read_value_type
-      mutability = read_varuint == 1 # varuint1 (bool)
+      mutability = read_uint8 == 1 # varuint1 (bool)
       GlobalType.new(content_type, mutability)
     end
 
@@ -259,7 +259,7 @@ module Wagyu::Wasm
     end
 
     def read_resizable_limits
-      flags = read_varuint # 1 if the maximum field is present, 0 otherwise
+      flags = read_uint8 # 1 if the maximum field is present, 0 otherwise
       initial = read_varuint # initial length (in units of table elements or wasm pages)
       if flags == 1
         maximum = read_varuint # only present if specified by flags
@@ -391,29 +391,29 @@ module Wagyu::Wasm
       when 0x23 then {name: :get_global, global_index: read_varuint} # varuint32
       when 0x24 then {name: :set_global, global_index: read_varuint} # varuint32
       # memory-related instructions
-      when 0x28 then {name: :load, type: :i32, flags: read_varuint, offset: read_varuint} # varuint32, varuint32
-      when 0x29 then {name: :load, type: :i64, flags: read_varuint, offset: read_varuint} # varuint32, varuint32
-      when 0x2a then {name: :load, type: :f32, flags: read_varuint, offset: read_varuint} # varuint32, varuint32
-      when 0x2b then {name: :load, type: :f64, flags: read_varuint, offset: read_varuint} # varuint32, varuint32
-      when 0x2c then {name: :load8_s, type: :i32, flags: read_varuint, offset: read_varuint} # varuint32, varuint32
-      when 0x2d then {name: :load8_u, type: :i32, flags: read_varuint, offset: read_varuint} # varuint32, varuint32
-      when 0x2e then {name: :load16_s, type: :i32, flags: read_varuint, offset: read_varuint} # varuint32, varuint32
-      when 0x2f then {name: :load16_u, type: :i32, flags: read_varuint, offset: read_varuint} # varuint32, varuint32
-      when 0x30 then {name: :load8_s, type: :i64, flags: read_varuint, offset: read_varuint} # varuint32, varuint32
-      when 0x31 then {name: :load8_u, type: :i64, flags: read_varuint, offset: read_varuint} # varuint32, varuint32
-      when 0x32 then {name: :load16_s, type: :i64, flags: read_varuint, offset: read_varuint} # varuint32, varuint32
-      when 0x33 then {name: :load16_u, type: :i64, flags: read_varuint, offset: read_varuint} # varuint32, varuint32
-      when 0x34 then {name: :load32_s, type: :i64, flags: read_varuint, offset: read_varuint} # varuint32, varuint32
-      when 0x35 then {name: :load32_u, type: :i64, flags: read_varuint, offset: read_varuint} # varuint32, varuint32
-      when 0x36 then {name: :store, type: :i32, flags: read_varuint, offset: read_varuint} # varuint32, varuint32
-      when 0x37 then {name: :store, type: :i64, flags: read_varuint, offset: read_varuint} # varuint32, varuint32
-      when 0x38 then {name: :store, type: :f32, flags: read_varuint, offset: read_varuint} # varuint32, varuint32
-      when 0x39 then {name: :store, type: :f64, flags: read_varuint, offset: read_varuint} # varuint32, varuint32
-      when 0x3a then {name: :store8, type: :f32, flags: read_varuint, offset: read_varuint} # varuint32, varuint32
-      when 0x3b then {name: :store16, type: :f32, flags: read_varuint, offset: read_varuint} # varuint32, varuint32
-      when 0x3a then {name: :store8, type: :f64, flags: read_varuint, offset: read_varuint} # varuint32, varuint32
-      when 0x3b then {name: :store16, type: :f64, flags: read_varuint, offset: read_varuint} # varuint32, varuint32
-      when 0x3c then {name: :store32, type: :f64, flags: read_varuint, offset: read_varuint} # varuint32, varuint32
+      when 0x28 then {name: :load, type: :i32, alignment: read_varuint, offset: read_varuint} # varuint32, varuint32
+      when 0x29 then {name: :load, type: :i64, alignment: read_varuint, offset: read_varuint} # varuint32, varuint32
+      when 0x2a then {name: :load, type: :f32, alignment: read_varuint, offset: read_varuint} # varuint32, varuint32
+      when 0x2b then {name: :load, type: :f64, alignment: read_varuint, offset: read_varuint} # varuint32, varuint32
+      when 0x2c then {name: :load8_s, type: :i32, alignment: read_varuint, offset: read_varuint} # varuint32, varuint32
+      when 0x2d then {name: :load8_u, type: :i32, alignment: read_varuint, offset: read_varuint} # varuint32, varuint32
+      when 0x2e then {name: :load16_s, type: :i32, alignment: read_varuint, offset: read_varuint} # varuint32, varuint32
+      when 0x2f then {name: :load16_u, type: :i32, alignment: read_varuint, offset: read_varuint} # varuint32, varuint32
+      when 0x30 then {name: :load8_s, type: :i64, alignment: read_varuint, offset: read_varuint} # varuint32, varuint32
+      when 0x31 then {name: :load8_u, type: :i64, alignment: read_varuint, offset: read_varuint} # varuint32, varuint32
+      when 0x32 then {name: :load16_s, type: :i64, alignment: read_varuint, offset: read_varuint} # varuint32, varuint32
+      when 0x33 then {name: :load16_u, type: :i64, alignment: read_varuint, offset: read_varuint} # varuint32, varuint32
+      when 0x34 then {name: :load32_s, type: :i64, alignment: read_varuint, offset: read_varuint} # varuint32, varuint32
+      when 0x35 then {name: :load32_u, type: :i64, alignment: read_varuint, offset: read_varuint} # varuint32, varuint32
+      when 0x36 then {name: :store, type: :i32, alignment: read_varuint, offset: read_varuint} # varuint32, varuint32
+      when 0x37 then {name: :store, type: :i64, alignment: read_varuint, offset: read_varuint} # varuint32, varuint32
+      when 0x38 then {name: :store, type: :f32, alignment: read_varuint, offset: read_varuint} # varuint32, varuint32
+      when 0x39 then {name: :store, type: :f64, alignment: read_varuint, offset: read_varuint} # varuint32, varuint32
+      when 0x3a then {name: :store8, type: :f32, alignment: read_varuint, offset: read_varuint} # varuint32, varuint32
+      when 0x3b then {name: :store16, type: :f32, alignment: read_varuint, offset: read_varuint} # varuint32, varuint32
+      when 0x3a then {name: :store8, type: :f64, alignment: read_varuint, offset: read_varuint} # varuint32, varuint32
+      when 0x3b then {name: :store16, type: :f64, alignment: read_varuint, offset: read_varuint} # varuint32, varuint32
+      when 0x3c then {name: :store32, type: :f64, alignment: read_varuint, offset: read_varuint} # varuint32, varuint32
       when 0x3f then {name: :current_memory, reserved: read_varuint == 1} # varuint1
       when 0x40 then {name: :grow_memory, reserved: read_varuint == 1} # varuint1
       # constants

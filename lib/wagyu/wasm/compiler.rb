@@ -120,11 +120,40 @@ module Wagyu::Wasm
         new_var { @stack.pop(2).join(" - ") }
       when :mul
         new_var { @stack.pop(2).join(" * ") }
+      when :div_u, :div_s, :div
+        new_var { @stack.pop(2).join(" / ") } # it's an integer division if both operands are integers, otherwise float division
       when :call
         n = @types[instr[:function_index]].params.length
         new_var { "_f#{instr[:function_index]}(#{@stack.pop(n).join(", ")})" }
       when :sqrt
         new_var { "Math.sqrt(#{@stack.pop})" }
+      when :load
+        new_var { "@_m0.#{instr[:type]}_load(#{@stack.pop})" }
+      when :load8_s
+        new_var { "@_m0.#{instr[:type]}_load8_s(#{@stack.pop})" }
+      when :load8_u
+        new_var { "@_m0.#{instr[:type]}_load8_u(#{@stack.pop})" }
+      when :load16_s
+        new_var { "@_m0.#{instr[:type]}_load16_s(#{@stack.pop})" }
+      when :load16_u
+        new_var { "@_m0.#{instr[:type]}_load16_u(#{@stack.pop})" }
+      when :load32_s
+        new_var { "@_m0.#{instr[:type]}_load32_s(#{@stack.pop})" }
+      when :load32_u
+        new_var { "@_m0.#{instr[:type]}_load32_u(#{@stack.pop})" }
+      when :store
+        a, b = @stack.pop(2)
+        @code << "@_m0.#{instr[:type]}_store(#{a}, #{b})"
+      when :store8
+        a, b = @stack.pop(2)
+        @code << "@_m0.#{instr[:type]}_store8(#{a}, #{b})"
+      when :store16
+        a, b = @stack.pop(2)
+        @code << "@_m0.#{instr[:type]}_store16(#{a}, #{b})"
+      when :store32
+        a, b = @stack.pop(2)
+        @code << "@_m0.#{instr[:type]}_store32(#{a}, #{b})"
+      when :store
       else
         raise StandardError.new("Unknown instruction: #{instr[:name]}")
       end
@@ -165,12 +194,14 @@ module Wagyu::Wasm
       import_funcs = 0
 
       num_globals = 0
+      num_memories = 0
 
       after_initialize = []
 
       if rep.import_section
         rep.import_section.imports.each do |import_entry|
-          if import_entry.kind == :function
+          case import_entry.kind
+          when :function
             types = rep.type_section.types[import_entry.type]
             params = types.params.map.with_index{|type, i| "p#{i}"}
 
@@ -185,10 +216,13 @@ module Wagyu::Wasm
             mod.module_class.class_eval(method)
 
             import_funcs += 1
-          elsif import_entry.kind == :global
+          when :global
             # TODO: assert the field is provided
             after_initialize << "@_g#{num_globals} = @import_object[:#{import_entry.module}][:#{import_entry.field}]"
             num_globals += 1
+          when :memory
+            after_initialize << "@_m#{num_memories} = @import_object[:#{import_entry.module}][:#{import_entry.field}]"
+            num_memories += 1
           end
         end
       end

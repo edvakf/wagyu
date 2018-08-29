@@ -51,7 +51,7 @@ module Wagyu::Wasm
     end
 
     alias_method :i32_load8_s, :i64_load8_s
-    alias_method :i32_load8_u, :i64_load8_iu
+    alias_method :i32_load8_u, :i64_load8_u
     alias_method :i32_load16_s, :i64_load16_s
     alias_method :i32_load16_u, :i64_load16_u
 
@@ -71,20 +71,20 @@ module Wagyu::Wasm
       @buffer[i, 8] = [n].pack("G") # big endian double precision float
     end
 
-    def i64_store8(i, n)
+    def f64_store8(i, n)
       @buffer[i, 1] = [n].pack("C") # unsigned char
     end
 
-    def i64_store16(i, n)
+    def f64_store16(i, n)
       @buffer[i, 2] = [n].pack("S>") # big endian unsigned short
     end
 
-    def i64_store32(i, n)
+    def f64_store32(i, n)
       @buffer[i, 4] = [n].pack("L>") # big endian unsigned long
     end
 
-    alias_method :i32_store8, :i64_store8
-    alias_method :i32_store16, :i64_store16
+    alias_method :f32_store8, :f64_store8
+    alias_method :f32_store16, :f64_store16
 
     def size
       @buffer.length / PAGE_SIZE
