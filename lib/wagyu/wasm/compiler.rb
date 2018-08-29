@@ -106,6 +106,8 @@ module Wagyu::Wasm
         new_var { @stack.pop(2).join(" <= ") }
       when :lt_u, :le_s
         new_var { @stack.pop(2).join(" < ") }
+      when :tee_local
+        @code << "#{@locals[instr[:local_index]]} = #{@stack.last}"
       when :set_local
         @code << "#{@locals[instr[:local_index]]} = #{@stack.pop}"
       when :get_local
@@ -227,6 +229,13 @@ module Wagyu::Wasm
         end
       end
 
+      if rep.memory_section
+        rep.memory_section.memories.each do |memory|
+          after_initialize << "@_m#{num_memories} = Wagyu::Wasm::Memory.new(#{memory.limits.initial}, #{memory.limits.maximum || "nil"})"
+          num_memories += 1
+        end
+      end
+
       if rep.global_section
         rep.global_section.globals.each do |global|
           case global.expr[:name]
@@ -272,6 +281,17 @@ module Wagyu::Wasm
 
       if rep.start_section
         after_initialize << "_f#{rep.start_section.index}"
+      end
+
+      if rep.data_section
+        rep.data_section.segments.each do |segment|
+          case segment.offset_expr[:name]
+          when :const
+            after_initialize << "@_m#{segment.index}.buffer[#{segment.offset_expr[:value]}, #{segment.data.length}] = #{segment.data.inspect}"
+          else
+            raise StandardError("") # TODO
+          end
+        end
       end
 
       mod.module_class.class_eval( <<~AFTER_INITIALIZE )

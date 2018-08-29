@@ -76,7 +76,7 @@ class WasmTest < Minitest::Test
   def test_memory
     str = "abcde"
     len = str.length
-    mem = Wagyu::Wasm::Memory.new(initial: 1, maximum: 10)
+    mem = Wagyu::Wasm::Memory.new(1, 10)
     mem.buffer[0, len] = str
     import_object = {
       env: {
@@ -86,6 +86,12 @@ class WasmTest < Minitest::Test
     instance = instantiate("reverse.wasm", import_object)
     instance.exports.reverse(len)
     assert_equal(str.reverse, mem.buffer[0, len])
+  end
+
+  def test_export_memory
+    instance = instantiate("memory.wasm")
+    result = instance.exports.sum(3)
+    assert_equal(6, result)
   end
 
   def instantiate(file, import_object = nil)

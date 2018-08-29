@@ -49,7 +49,7 @@ module Wagyu::Wasm
     GlobalType = Struct.new(:content_type, :mutability) # ValueType, bool (varuint1)
     TableType = Struct.new(:element_type, :limits) # ValueType, ResizableLimits
     MemoryType = Struct.new(:limits) # ResizableLimits
-    ResizableLimits = Struct.new(:flags, :initial, :maximum) # int, int, nullable int
+    ResizableLimits = Struct.new(:initial, :maximum) # int, nullable int
 
     FunctionBody = Struct.new(:locals, :code)
     LocalEntry = Struct.new(:count, :type)
@@ -57,5 +57,7 @@ module Wagyu::Wasm
     Global = Struct.new(:global_type, :expr) # GlobalType, instruction
 
     ExportEntry = Struct.new(:field, :kind, :index) # str, ExternalKind, int
+
+    DataSegment = Struct.new(:index, :offset_expr, :data) # int (memory index), int (segment offset byte), binary
   end
 end

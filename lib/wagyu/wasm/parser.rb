@@ -166,8 +166,8 @@ module Wagyu::Wasm
         rep.function_section = read_function_section
       #when TableID
         #rep.table_section = read_table_section
-      #when MemoryID
-        #rep.memory_section = read_memory_section
+      when MemoryID
+        rep.memory_section = read_memory_section
       when GlobalID
         rep.global_section = read_global_section
       when ExportID
@@ -178,8 +178,8 @@ module Wagyu::Wasm
         #rep.element_section = read_element_section
       when CodeID
         rep.code_section = read_code_section
-      #when DataID
-        #rep.data_section = read_data_section
+      when DataID
+        rep.data_section = read_data_section
       #when UnknownID
         #rep.name_section = read_name_section
       else
@@ -266,7 +266,7 @@ module Wagyu::Wasm
       else
         maximum = nil
       end
-      ResizableLimits.new(flags, initial, maximum)
+      ResizableLimits.new(initial, maximum)
     end
 
     # FunctionSection
@@ -275,6 +275,14 @@ module Wagyu::Wasm
         read_varuint
       end
       FunctionSection.new(types)
+    end
+
+    # MemorySection
+    def read_memory_section
+      memories = Array.new(read_varuint) do
+        read_memory_type
+      end
+      MemorySection.new(memories)
     end
 
     # GlobalSection
@@ -550,6 +558,22 @@ module Wagyu::Wasm
       when 0xbf then {name: :reinterpret, type: :f64, from: :i64}
       else raise ParseError, 'unknown opcode'
       end
+    end
+
+    # DataSection
+    def read_data_section
+      segments = Array.new(read_varuint) do
+        read_data_segment
+      end
+      DataSection.new(segments)
+    end
+
+    def read_data_segment
+      index = read_varuint
+      offset_expr = read_constant_expr
+      length = read_varuint
+      data = read_bytes(length)
+      DataSegment.new(index, offset_expr, data)
     end
   end
 end
