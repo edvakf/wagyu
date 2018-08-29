@@ -1,7 +1,7 @@
 ;; https://ukyo.github.io/wasm-usui-book/webroot/get-started-webassembly.html
 ;; sum of $n integers (0 <= $n <= 4)
 (module
-  (memory 1 2)
+  (memory (export "mem") 1 2)
   (data (i32.const 0) "\01\00\00\00\02\00\00\00\03\00\00\00\04\00\00\00")
   (func (export "sum") (param $n i32) (result i32)
     (local $i i32)
@@ -63,77 +63,81 @@
 ;; ; section "Export" (7)
 ;; 000001a: 07                                        ; section code
 ;; 000001b: 00                                        ; section size (guess)
-;; 000001c: 01                                        ; num exports
+;; 000001c: 02                                        ; num exports
 ;; 000001d: 03                                        ; string length
-;; 000001e: 7375 6d                                  sum  ; export name
-;; 0000021: 00                                        ; export kind
-;; 0000022: 00                                        ; export func index
-;; 000001b: 07                                        ; FIXUP section size
+;; 000001e: 6d65 6d                                  mem  ; export name
+;; 0000021: 02                                        ; export kind
+;; 0000022: 00                                        ; export memory index
+;; 0000023: 03                                        ; string length
+;; 0000024: 7375 6d                                  sum  ; export name
+;; 0000027: 00                                        ; export kind
+;; 0000028: 00                                        ; export func index
+;; 000001b: 0d                                        ; FIXUP section size
 ;; ; section "Code" (10)
-;; 0000023: 0a                                        ; section code
-;; 0000024: 00                                        ; section size (guess)
-;; 0000025: 01                                        ; num functions
+;; 0000029: 0a                                        ; section code
+;; 000002a: 00                                        ; section size (guess)
+;; 000002b: 01                                        ; num functions
 ;; ; function body 0
-;; 0000026: 00                                        ; func body size (guess)
-;; 0000027: 01                                        ; local decl count
-;; 0000028: 02                                        ; local type count
-;; 0000029: 7f                                        ; i32
-;; 000002a: 41                                        ; i32.const
-;; 000002b: 00                                        ; i32 literal
-;; 000002c: 22                                        ; tee_local
-;; 000002d: 02                                        ; local index
-;; 000002e: 21                                        ; set_local
-;; 000002f: 01                                        ; local index
-;; 0000030: 02                                        ; block
-;; 0000031: 40                                        ; void
-;; 0000032: 03                                        ; loop
-;; 0000033: 40                                        ; void
-;; 0000034: 20                                        ; get_local
+;; 000002c: 00                                        ; func body size (guess)
+;; 000002d: 01                                        ; local decl count
+;; 000002e: 02                                        ; local type count
+;; 000002f: 7f                                        ; i32
+;; 0000030: 41                                        ; i32.const
+;; 0000031: 00                                        ; i32 literal
+;; 0000032: 22                                        ; tee_local
+;; 0000033: 02                                        ; local index
+;; 0000034: 21                                        ; set_local
 ;; 0000035: 01                                        ; local index
-;; 0000036: 20                                        ; get_local
-;; 0000037: 00                                        ; local index
-;; 0000038: 46                                        ; i32.eq
-;; 0000039: 0d                                        ; br_if
-;; 000003a: 01                                        ; break depth
-;; 000003b: 20                                        ; get_local
-;; 000003c: 01                                        ; local index
-;; 000003d: 41                                        ; i32.const
-;; 000003e: 04                                        ; i32 literal
-;; 000003f: 6c                                        ; i32.mul
-;; 0000040: 28                                        ; i32.load
-;; 0000041: 02                                        ; alignment
-;; 0000042: 00                                        ; load offset
-;; 0000043: 20                                        ; get_local
-;; 0000044: 02                                        ; local index
-;; 0000045: 6a                                        ; i32.add
-;; 0000046: 21                                        ; set_local
-;; 0000047: 02                                        ; local index
-;; 0000048: 20                                        ; get_local
-;; 0000049: 01                                        ; local index
-;; 000004a: 41                                        ; i32.const
-;; 000004b: 01                                        ; i32 literal
-;; 000004c: 6a                                        ; i32.add
-;; 000004d: 21                                        ; set_local
-;; 000004e: 01                                        ; local index
-;; 000004f: 0c                                        ; br
-;; 0000050: 00                                        ; break depth
-;; 0000051: 0b                                        ; end
-;; 0000052: 0b                                        ; end
-;; 0000053: 20                                        ; get_local
-;; 0000054: 02                                        ; local index
-;; 0000055: 0b                                        ; end
-;; 0000026: 2f                                        ; FIXUP func body size
-;; 0000024: 31                                        ; FIXUP section size
+;; 0000036: 02                                        ; block
+;; 0000037: 40                                        ; void
+;; 0000038: 03                                        ; loop
+;; 0000039: 40                                        ; void
+;; 000003a: 20                                        ; get_local
+;; 000003b: 01                                        ; local index
+;; 000003c: 20                                        ; get_local
+;; 000003d: 00                                        ; local index
+;; 000003e: 46                                        ; i32.eq
+;; 000003f: 0d                                        ; br_if
+;; 0000040: 01                                        ; break depth
+;; 0000041: 20                                        ; get_local
+;; 0000042: 01                                        ; local index
+;; 0000043: 41                                        ; i32.const
+;; 0000044: 04                                        ; i32 literal
+;; 0000045: 6c                                        ; i32.mul
+;; 0000046: 28                                        ; i32.load
+;; 0000047: 02                                        ; alignment
+;; 0000048: 00                                        ; load offset
+;; 0000049: 20                                        ; get_local
+;; 000004a: 02                                        ; local index
+;; 000004b: 6a                                        ; i32.add
+;; 000004c: 21                                        ; set_local
+;; 000004d: 02                                        ; local index
+;; 000004e: 20                                        ; get_local
+;; 000004f: 01                                        ; local index
+;; 0000050: 41                                        ; i32.const
+;; 0000051: 01                                        ; i32 literal
+;; 0000052: 6a                                        ; i32.add
+;; 0000053: 21                                        ; set_local
+;; 0000054: 01                                        ; local index
+;; 0000055: 0c                                        ; br
+;; 0000056: 00                                        ; break depth
+;; 0000057: 0b                                        ; end
+;; 0000058: 0b                                        ; end
+;; 0000059: 20                                        ; get_local
+;; 000005a: 02                                        ; local index
+;; 000005b: 0b                                        ; end
+;; 000002c: 2f                                        ; FIXUP func body size
+;; 000002a: 31                                        ; FIXUP section size
 ;; ; section "Data" (11)
-;; 0000056: 0b                                        ; section code
-;; 0000057: 00                                        ; section size (guess)
-;; 0000058: 01                                        ; num data segments
+;; 000005c: 0b                                        ; section code
+;; 000005d: 00                                        ; section size (guess)
+;; 000005e: 01                                        ; num data segments
 ;; ; data segment header 0
-;; 0000059: 00                                        ; memory index
-;; 000005a: 41                                        ; i32.const
-;; 000005b: 00                                        ; i32 literal
-;; 000005c: 0b                                        ; end
-;; 000005d: 10                                        ; data segment size
+;; 000005f: 00                                        ; memory index
+;; 0000060: 41                                        ; i32.const
+;; 0000061: 00                                        ; i32 literal
+;; 0000062: 0b                                        ; end
+;; 0000063: 0c                                        ; data segment size
 ;; ; data segment data 0
-;; 000005e: 0100 0000 0200 0000 0300 0000 0400 0000   ; data segment data
-;; 0000057: 16                                        ; FIXUP section size
+;; 0000064: 0100 0000 0200 0000 0300 0000             ; data segment data
+;; 000005d: 12                                        ; FIXUP section size

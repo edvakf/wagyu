@@ -92,6 +92,9 @@ class WasmTest < Minitest::Test
     instance = instantiate("memory.wasm")
     result = instance.exports.sum(3)
     assert_equal(6, result)
+    instance.exports.mem.i32_store(16, 5)
+    result = instance.exports.sum(5)
+    assert_equal(15, result)
   end
 
   def instantiate(file, import_object = nil)

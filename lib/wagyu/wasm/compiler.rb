@@ -268,13 +268,20 @@ module Wagyu::Wasm
 
       if rep.export_section
         rep.export_section.exports.each_with_index do |export_entry, i|
-          if export_entry.kind == :function
+          case export_entry.kind
+          when :function
 
             raise StandardError("A function must not start with an underscore") if export_entry.field.start_with?("_")
 
             mod.module_class.class_eval do
               alias_method export_entry.field.to_sym, "_f#{export_entry.index}".to_sym
             end
+          when :memory
+            mod.module_class.class_eval( <<~DEFINE_MEMORY )
+              def #{export_entry.field}
+                @_m#{export_entry.index}
+              end
+            DEFINE_MEMORY
           end
         end
       end
