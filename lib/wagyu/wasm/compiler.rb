@@ -73,6 +73,13 @@ module Wagyu::Wasm
         # TODO: no instructions should follow br, but when they come, br must be treated as stack-polymorphic.
 
         @code << "next #{instr[:relative_depth]}"
+      when :br_table
+        @code << "case #{@stack.pop}"
+        instr[:target_table].each.with_index do |depth, i|
+          @code << "when #{i} then next #{depth}"
+        end
+        @code << "else next #{instr[:default_target]}"
+        @code << "end"
       when :end
         control = @controls.pop
 
@@ -90,6 +97,8 @@ module Wagyu::Wasm
           # Taking a branch unwinds the operand stack up to the height where the targeted structured control instruction was entered.
           @stack.slice!(control[:stack_depth], @stack.length)
         end
+      when :return
+        @code << "return #{@stack.last}"
       when :const
         new_var { instr[:value].to_s }
       when :eq

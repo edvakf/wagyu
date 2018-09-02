@@ -49,6 +49,18 @@ class WasmTest < Minitest::Test
     assert_equal(1, result)
   end
 
+  def test_br_table
+    instance = instantiate("br_table.wasm")
+    result = instance.exports.switch(0)
+    assert_equal(111, result)
+    result = instance.exports.switch(2)
+    assert_equal(333, result)
+    result = instance.exports.switch(3)
+    assert_equal(333, result)
+    result = instance.exports.switch(-1)
+    assert_equal(333, result)
+  end
+
   def test_import
     import_object = {
       util: {
