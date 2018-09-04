@@ -88,7 +88,7 @@ class WasmTest < Minitest::Test
   def test_memory
     str = "abcde"
     len = str.length
-    mem = Wagyu::Wasm::Memory.new(1, 10)
+    mem = Wagyu::Wasm::Memory.new(initial: 1, maximum: 10)
     mem.buffer[0, len] = str
     import_object = {
       env: {

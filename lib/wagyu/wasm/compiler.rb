@@ -240,7 +240,7 @@ module Wagyu::Wasm
 
       if rep.memory_section
         rep.memory_section.memories.each do |memory|
-          after_initialize << "@_m#{num_memories} = Wagyu::Wasm::Memory.new(#{memory.limits.initial}, #{memory.limits.maximum || "nil"})"
+          after_initialize << "@_m#{num_memories} = Wagyu::Wasm::Memory.new(initial: #{memory.limits.initial}, maximum: #{memory.limits.maximum || "nil"})"
           num_memories += 1
         end
       end

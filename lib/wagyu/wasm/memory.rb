@@ -5,7 +5,7 @@ module Wagyu::Wasm
     # https://webassembly.github.io/spec/core/exec/runtime.html#page-size
     PAGE_SIZE = 64 * 1024
 
-    def initialize(initial, maximum = nil)
+    def initialize(initial:, maximum: nil)
       @buffer = String.new("\0", encoding: Encoding::ASCII_8BIT) * initial * PAGE_SIZE
       @maximum = maximum
     end
