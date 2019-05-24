@@ -164,8 +164,8 @@ module Wagyu::Wasm
         rep.import_section = read_import_section
       when FunctionID
         rep.function_section = read_function_section
-      #when TableID
-        #rep.table_section = read_table_section
+      when TableID
+        rep.table_section = read_table_section
       when MemoryID
         rep.memory_section = read_memory_section
       when GlobalID
@@ -174,8 +174,8 @@ module Wagyu::Wasm
         rep.export_section = read_export_section
       when StartID
         rep.start_section = read_start_section
-      #when ElementID
-        #rep.element_section = read_element_section
+      when ElementID
+        rep.element_section = read_element_section
       when CodeID
         rep.code_section = read_code_section
       when DataID
@@ -277,6 +277,14 @@ module Wagyu::Wasm
       FunctionSection.new(types)
     end
 
+    # TableSection
+    def read_table_section
+      tables = Array.new(read_varuint) do
+        read_table_type
+      end
+      TableSection.new(tables)
+    end
+
     # MemorySection
     def read_memory_section
       memories = Array.new(read_varuint) do
@@ -328,6 +336,23 @@ module Wagyu::Wasm
     def read_start_section
       funcidx = read_varuint
       StartSection.new(funcidx)
+    end
+
+    # ElementSection
+    def read_element_section
+      element_segments = Array.new(read_varuint) do
+        read_element_segment
+      end
+      ElementsSection.new(element_segments)
+    end
+
+    def read_element_segment
+      table_index = read_varuint
+      offset_expr = read_constant_expr
+      function_indices = Array.new(read_varuint) do
+        read_varuint
+      end
+      ElementSegment.new(table_index, offset_expr, function_indices)
     end
 
     # CodeSection

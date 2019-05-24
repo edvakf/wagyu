@@ -59,5 +59,7 @@ module Wagyu::Wasm
     ExportEntry = Struct.new(:field, :kind, :index) # str, ExternalKind, int
 
     DataSegment = Struct.new(:index, :offset_expr, :data) # int (memory index), int (segment offset byte), binary
+
+    ElementSegment = Struct.new(:index, :offset_expr, :function_indices) # int (table index), int (segment offset byte), []int
   end
 end
