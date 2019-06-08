@@ -7,6 +7,12 @@ class WasmTest < Minitest::Test
     assert_equal(3, result)
   end
 
+  def test_rem
+    instance = instantiate("rem.wasm")
+    result = instance.exports.rem(13, 4)
+    assert_equal(1, result)
+  end
+
   def test_square
     instance = instantiate("square.wasm")
     result = instance.exports.square(3)
