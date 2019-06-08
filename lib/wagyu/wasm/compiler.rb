@@ -133,6 +133,8 @@ module Wagyu::Wasm
         new_var { @stack.pop(2).join(" * ") }
       when :div_u, :div_s, :div
         new_var { @stack.pop(2).join(" / ") } # it's an integer division if both operands are integers, otherwise float division
+      when :rem_s, :rem_u
+        new_var { @stack.pop(2).join(" % ") }
       when :call
         n = @types[instr[:function_index]].params.length
         new_var { "_f#{instr[:function_index]}(#{@stack.pop(n).join(", ")})" }
