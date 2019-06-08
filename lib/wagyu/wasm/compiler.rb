@@ -107,6 +107,8 @@ module Wagyu::Wasm
         new_var { @stack.pop(2).join(" != ") }
       when :eqz
         new_var { "#{@stack.pop} == 0" }
+      when :and
+        new_var { @stack.pop(2).join(" && ") }
       when :ge_u, :ge_s
         new_var { @stack.pop(2).join(" >= ") }
       when :gt_u, :ge_s
