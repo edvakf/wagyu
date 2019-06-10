@@ -21,6 +21,14 @@ class WasmTest < Minitest::Test
     assert_equal(true, instance.exports.and(true, true))
   end
 
+  def test_or
+    instance = instantiate("or.wasm")
+    assert_equal(false, instance.exports.or(false, false))
+    assert_equal(true, instance.exports.or(false, true))
+    assert_equal(true, instance.exports.or(true, false))
+    assert_equal(true, instance.exports.or(true, true))
+  end
+
   def test_rms
     instance = instantiate("rms.wasm")
     result = instance.exports.rms(3.0, 4.0)
