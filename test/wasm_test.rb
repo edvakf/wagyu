@@ -29,6 +29,14 @@ class WasmTest < Minitest::Test
     assert_equal(true, instance.exports.or(true, true))
   end
 
+  def test_xor
+    instance = instantiate("xor.wasm")
+    assert_equal(false, instance.exports.xor(false, false))
+    assert_equal(true, instance.exports.xor(false, true))
+    assert_equal(true, instance.exports.xor(true, false))
+    assert_equal(false, instance.exports.xor(true, true))
+  end
+
   def test_rms
     instance = instantiate("rms.wasm")
     result = instance.exports.rms(3.0, 4.0)
