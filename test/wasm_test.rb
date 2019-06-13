@@ -31,6 +31,13 @@ class WasmTest < Minitest::Test
     assert_equal(55, result)
   end
 
+  def test_big_small_or_equal
+    instance = instantiate("big_small_or_equal.wasm")
+    assert_equal(1, instance.exports.big_small_or_equal(11, 10))
+    assert_equal(2, instance.exports.big_small_or_equal(9, 10))
+    assert_equal(3, instance.exports.big_small_or_equal(10, 10))
+  end
+
   def test_control01
     instance = instantiate("control01.wasm")
     result = instance.exports.test()
