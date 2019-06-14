@@ -109,11 +109,11 @@ module Wagyu::Wasm
         new_var { "#{@stack.pop} == 0" }
       when :ge_u, :ge_s
         new_var { @stack.pop(2).join(" >= ") }
-      when :gt_u, :ge_s
+      when :gt_u, :gt_s
         new_var { @stack.pop(2).join(" > ") }
       when :le_u, :le_s
         new_var { @stack.pop(2).join(" <= ") }
-      when :lt_u, :le_s
+      when :lt_u, :lt_s
         new_var { @stack.pop(2).join(" < ") }
       when :shl
         new_var { @stack.pop(2).join(" << ") }
@@ -137,6 +137,8 @@ module Wagyu::Wasm
         new_var { @stack.pop(2).join(" * ") }
       when :div_u, :div_s, :div
         new_var { @stack.pop(2).join(" / ") } # it's an integer division if both operands are integers, otherwise float division
+      when :rem_s, :rem_u
+        new_var { @stack.pop(2).join(" % ") }
       when :call
         n = @types[instr[:function_index]].params.length
         new_var { "_f#{instr[:function_index]}(#{@stack.pop(n).join(", ")})" }

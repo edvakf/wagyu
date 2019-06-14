@@ -7,6 +7,12 @@ class WasmTest < Minitest::Test
     assert_equal(3, result)
   end
 
+  def test_rem
+    instance = instantiate("rem.wasm")
+    result = instance.exports.rem(13, 4)
+    assert_equal(1, result)
+  end
+
   def test_square
     instance = instantiate("square.wasm")
     result = instance.exports.square(3)
@@ -41,6 +47,13 @@ class WasmTest < Minitest::Test
     instance = instantiate("shift_right.wasm")
     result = instance.exports.shift_right(40, 2)
     assert_equal(10, result)
+  end
+
+  def test_big_small_or_equal
+    instance = instantiate("big_small_or_equal.wasm")
+    assert_equal(1, instance.exports.big_small_or_equal(11, 10))
+    assert_equal(2, instance.exports.big_small_or_equal(9, 10))
+    assert_equal(3, instance.exports.big_small_or_equal(10, 10))
   end
 
   def test_control01
