@@ -15,26 +15,26 @@ class WasmTest < Minitest::Test
 
   def test_and
     instance = instantiate("and.wasm")
-    assert_equal(false, instance.exports.and(false, false))
-    assert_equal(false, instance.exports.and(false, true))
-    assert_equal(false, instance.exports.and(true, false))
-    assert_equal(true, instance.exports.and(true, true))
+    assert_equal(0, instance.exports.and(0, 0))
+    assert_equal(0, instance.exports.and(0, 1))
+    assert_equal(0, instance.exports.and(1, 0))
+    assert_equal(1, instance.exports.and(1, 1))
   end
 
   def test_or
     instance = instantiate("or.wasm")
-    assert_equal(false, instance.exports.or(false, false))
-    assert_equal(true, instance.exports.or(false, true))
-    assert_equal(true, instance.exports.or(true, false))
-    assert_equal(true, instance.exports.or(true, true))
+    assert_equal(0, instance.exports.or(0, 0))
+    assert_equal(1, instance.exports.or(0, 1))
+    assert_equal(1, instance.exports.or(1, 0))
+    assert_equal(1, instance.exports.or(1, 1))
   end
 
   def test_xor
     instance = instantiate("xor.wasm")
-    assert_equal(false, instance.exports.xor(false, false))
-    assert_equal(true, instance.exports.xor(false, true))
-    assert_equal(true, instance.exports.xor(true, false))
-    assert_equal(false, instance.exports.xor(true, true))
+    assert_equal(0, instance.exports.xor(0, 0))
+    assert_equal(1, instance.exports.xor(0, 1))
+    assert_equal(1, instance.exports.xor(1, 0))
+    assert_equal(0, instance.exports.xor(1, 1))
   end
 
   def test_rms
