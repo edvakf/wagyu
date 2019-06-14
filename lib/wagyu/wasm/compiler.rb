@@ -117,6 +117,8 @@ module Wagyu::Wasm
         new_var { @stack.pop(2).join(" < ") }
       when :shl
         new_var { @stack.pop(2).join(" << ") }
+      when :shr_u, :shr_s
+        new_var { @stack.pop(2).join(" >> ") }
       when :tee_local
         @code << "#{@locals[instr[:local_index]]} = #{@stack.last}"
       when :set_local
