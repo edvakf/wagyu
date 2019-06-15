@@ -61,6 +61,18 @@ class WasmTest < Minitest::Test
     assert_equal(55, result)
   end
 
+  def test_shift_left
+    instance = instantiate("shift_left.wasm")
+    result = instance.exports.shift_left(7, 2)
+    assert_equal(28, result)
+  end
+
+  def test_shift_right
+    instance = instantiate("shift_right.wasm")
+    result = instance.exports.shift_right(40, 2)
+    assert_equal(10, result)
+  end
+
   def test_big_small_or_equal
     instance = instantiate("big_small_or_equal.wasm")
     assert_equal(1, instance.exports.big_small_or_equal(11, 10))
