@@ -19,6 +19,30 @@ class WasmTest < Minitest::Test
     assert_equal(9, result)
   end
 
+  def test_and
+    instance = instantiate("and.wasm")
+    assert_equal(0, instance.exports.and(0, 0))
+    assert_equal(0, instance.exports.and(0, 1))
+    assert_equal(0, instance.exports.and(1, 0))
+    assert_equal(1, instance.exports.and(1, 1))
+  end
+
+  def test_or
+    instance = instantiate("or.wasm")
+    assert_equal(0, instance.exports.or(0, 0))
+    assert_equal(1, instance.exports.or(0, 1))
+    assert_equal(1, instance.exports.or(1, 0))
+    assert_equal(1, instance.exports.or(1, 1))
+  end
+
+  def test_xor
+    instance = instantiate("xor.wasm")
+    assert_equal(0, instance.exports.xor(0, 0))
+    assert_equal(1, instance.exports.xor(0, 1))
+    assert_equal(1, instance.exports.xor(1, 0))
+    assert_equal(0, instance.exports.xor(1, 1))
+  end
+
   def test_rms
     instance = instantiate("rms.wasm")
     result = instance.exports.rms(3.0, 4.0)
